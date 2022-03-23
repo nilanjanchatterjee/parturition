@@ -3,8 +3,7 @@ library(tidyverse)
 library(readr)
 
 rFunction <-function(data, threshold=NULL, window=72){
-  
-   
+ 
   data_df <-as.data.frame(data)
   uid <-unique(data_df$tag_local_identifier)
   
@@ -37,6 +36,8 @@ rFunction <-function(data, threshold=NULL, window=72){
       ### Count the sequence length and print the maximum length time
       data_temp$run <-sequence(rle(data_temp$cnd)$lengths)
       data_temp$run_positive <- ifelse(data_temp$cnd == 0, 0, data_temp$run)
+      
+      dat_updt[[i]]<- data_temp ### append data for multiple individuals
       
       dat_output[i,2] <- max(data_temp$run_positive)
       dat_output[i,3] <- data_temp$timestamp[which.max(data_temp$run_positive)-max(data_temp$run_positive)]
@@ -81,6 +82,8 @@ rFunction <-function(data, threshold=NULL, window=72){
         data_temp$run <-sequence(rle(data_temp$cnd)$lengths)
         data_temp$run_positive <- ifelse(data_temp$cnd == 0, 0, data_temp$run)
         
+        dat_updt[[i]]<- data_temp ### append data for multiple individuals
+        
         dat_output[i,2] <- max(data_temp$run_positive)
         dat_output[i,3] <- data_temp$timestamp[which.max(data_temp$run_positive)-max(data_temp$run_positive)]
         dat_output[i,4] <- data_temp$timestamp[which.max(data_temp$run_positive)]
@@ -102,6 +105,9 @@ rFunction <-function(data, threshold=NULL, window=72){
     
   }
   dev.off()
+  
+  dat_final <-do.call(rbind,dat_updt)
+  return(dat_final)
   
   names(dat_output) <-c("Individual_id", "Number_of_max_reloc", "Start_date", "End_date", "location_long", "location_lat")
   write.csv(dat_output, file= "Partuition_output.csv")
