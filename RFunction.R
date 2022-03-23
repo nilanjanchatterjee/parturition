@@ -104,5 +104,5 @@ rFunction <-function(data, threshold=NULL, window=72){
   dev.off()
   
   names(dat_output) <-c("Individual_id", "Number_of_max_reloc", "Start_date", "End_date", "location_long", "location_lat")
-  write.csv(dat_output, "Partuition_date_output.csv")
+  result(dat_output)
 }
