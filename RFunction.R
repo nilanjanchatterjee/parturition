@@ -49,7 +49,7 @@ rFunction <-function(data, threshold=NULL, window=72){
         dat_output[i, 5:6]<-NA
       }
       
-      plot(data_temp$timestamp, data_temp$distance, main= uid[i])
+      plot(data_temp$timestamp, data_temp$distance, main= uid[i], xlab= "Step-length", ylab= "Time")
       lines(data_temp$timestamp, data_temp$distance)
       abline(h=mean(data_temp$speed, na.rm=T)*median(as.numeric(data_temp$timediff), na.rm=T), lty=2, lwd=2, col= "red")
       abline(v= data_temp$timestamp[which.max(data_temp$run_positive)], lty=3, lwd=2, col= "blue")
@@ -92,7 +92,7 @@ rFunction <-function(data, threshold=NULL, window=72){
           dat_output[i, 5:6]<-NA
         }
         
-        plot(data_temp$timestamp, data_temp$distance, main= uid[i])
+        plot(data_temp$timestamp, data_temp$distance, main= uid[i], xlab= "Step-length", ylab= "Time")
         lines(data_temp$timestamp, data_temp$distance)
         abline(h=mean(data_temp$speed, na.rm=T)*median(as.numeric(data_temp$timediff), na.rm=T), lty=2, lwd=2, col= "red")
         abline(v= data_temp$timestamp[which.max(data_temp$run_positive)], lty=3, lwd=2, col= "blue")
