@@ -10,7 +10,7 @@ rFunction <-function(data, threshold=NULL, window=72){
   dat_output <-as.data.frame(uid) ## Save the different individuals 
   plot.new()
   
-  pdf("Partuition_vel.pdf", width = 8, height = 12)
+  pdf("Parturition_vel.pdf", width = 8, height = 12)
   par(mfrow=c(4,3), mar=c(4,4,3,1))
   
   ## if no values are specified as threshold then use the mean as the threshold
@@ -110,5 +110,5 @@ rFunction <-function(data, threshold=NULL, window=72){
   return(dat_final)
   
   names(dat_output) <-c("Individual_id", "Number_of_max_reloc", "Start_date", "End_date", "location_long", "location_lat")
-  write.csv(dat_output, file= "Partuition_output.csv")
+  write.csv(dat_output, file= "Parturition_output.csv")
 }
