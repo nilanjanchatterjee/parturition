@@ -39,22 +39,26 @@ rFunction <-function(data, threshold=NULL, window=72){
       
       dat_updt[[i]]<- data_temp ### append data for multiple individuals
       
+      index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)
+      index.end   <- which.max(data_temp$run_positive)
+      
       dat_output[i,2] <- max(data_temp$run_positive)
-      dat_output[i,3] <- data_temp$timestamp[which.max(data_temp$run_positive)-max(data_temp$run_positive)]
-      dat_output[i,4] <- data_temp$timestamp[which.max(data_temp$run_positive)]
+      dat_output[i,3] <- data_temp$timestamp[index.start]
+      dat_output[i,4] <- data_temp$timestamp[index.end]
       if(!is.na(dat_output[i,3])){
-        dat_output[i,5] <- data_temp$location_long[which.max(data_temp$run_positive)-max(data_temp$run_positive)]
-        dat_output[i,6] <- data_temp$location_lat[which.max(data_temp$run_positive)-max(data_temp$run_positive)]
+        dat_output[i,5] <- data_temp$location_long[index.start]
+        dat_output[i,6] <- data_temp$location_lat[index.start]
       } else
       {
         dat_output[i, 5:6]<-NA
       }
       
-      plot(data_temp$timestamp, data_temp$distance, main= uid[i], xlab= "Step-length", ylab= "Time")
-      lines(data_temp$timestamp, data_temp$distance)
-      abline(h=mean(data_temp$speed, na.rm=T)*median(as.numeric(data_temp$timediff), na.rm=T), lty=2, lwd=2, col= "red")
-      abline(v= data_temp$timestamp[which.max(data_temp$run_positive)], lty=3, lwd=2, col= "blue")
-      abline(v= data_temp$timestamp[which.max(data_temp$run_positive)-max(data_temp$run_positive)], lty=3, lwd=2, col= "blue")
+      plot(data_temp$timestamp, data_temp$speed, main= uid[i], 
+           xlab= expression(paste("Distance /", Delta, "t")), ylab= "Time")
+      lines(data_temp$timestamp, data_temp$speed)
+      abline(h=mean(data_temp$speed, na.rm=T), lty=2, lwd=2, col= "red")
+      abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
+      abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
     }
   }
   }
@@ -84,22 +88,26 @@ rFunction <-function(data, threshold=NULL, window=72){
         
         dat_updt[[i]]<- data_temp ### append data for multiple individuals
         
+        index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)
+        index.end   <- which.max(data_temp$run_positive)
+          
         dat_output[i,2] <- max(data_temp$run_positive)
-        dat_output[i,3] <- data_temp$timestamp[which.max(data_temp$run_positive)-max(data_temp$run_positive)]
-        dat_output[i,4] <- data_temp$timestamp[which.max(data_temp$run_positive)]
+        dat_output[i,3] <- data_temp$timestamp[index.start]
+        dat_output[i,4] <- data_temp$timestamp[index.end]
         if(!is.na(dat_output[i,3])){
-          dat_output[i,5] <- data_temp$location_long[which.max(data_temp$run_positive)-max(data_temp$run_positive)]
-          dat_output[i,6] <- data_temp$location_lat[which.max(data_temp$run_positive)-max(data_temp$run_positive)]
+          dat_output[i,5] <- data_temp$location_long[index.start]
+          dat_output[i,6] <- data_temp$location_lat[index.start]
         } else
         {
           dat_output[i, 5:6]<-NA
         }
         
-        plot(data_temp$timestamp, data_temp$distance, main= uid[i], xlab= "Step-length", ylab= "Time")
-        lines(data_temp$timestamp, data_temp$distance)
-        abline(h=mean(data_temp$speed, na.rm=T)*median(as.numeric(data_temp$timediff), na.rm=T), lty=2, lwd=2, col= "red")
-        abline(v= data_temp$timestamp[which.max(data_temp$run_positive)], lty=3, lwd=2, col= "blue")
-        abline(v= data_temp$timestamp[which.max(data_temp$run_positive)-max(data_temp$run_positive)], lty=3, lwd=2, col= "blue")
+        plot(data_temp$timestamp, data_temp$speed, main= uid[i], 
+             xlab= expression(paste("Distance /", Delta, "t")), ylab= "Time")
+        lines(data_temp$timestamp, data_temp$speed)
+        abline(h=mean(data_temp$speed, na.rm=T), lty=2, lwd=2, col= "red")
+        abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
+        abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
       }
     }
     

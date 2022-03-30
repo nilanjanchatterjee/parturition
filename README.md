@@ -1,7 +1,7 @@
 # Parturition
 
 Moveapps 
-Github repository: https://github.com/nilanjanchatterjee/partuition
+Github repository: https://github.com/nilanjanchatterjee/parturition
 
 ## Description
 
@@ -9,19 +9,22 @@ The app predicts time, location and length of parturition events from radio-tele
 
 ## Documentation
 
-The app should be ran with the app *Filter data by season*  and *Distance between locations* for convenience. It uses the input of step-length calculated from the *Distance between locations* app. This app uses an individual filter and calcualtes the stepwise speed for each relocation. Then it filters the location based on the threshold provided by the user or calculates using the average from the dataset. There are pros and cons for both the choices and user discretion and knowledge should be used. 
-Based on the filter it calcualtes the parturition interval, location of the parturition and number of relocations in the partution inerval. We used the maximum interval from the data that satisfies the threshold condiiton. 
+The app should be ran with the app *Filter data by season*  and *Distance between locations* for convenience. It uses the input of step-length calculated from the *Distance between locations* app. This app uses an individual filter and calculates the step-wise speed for each relocation. Then it filters the location based on the threshold provided by the user or calculates using the average from the dataset. There are pros and cons for both the choices and user discretion and knowledge should be used. 
+Based on the filter it calculates the parturition interval, location of the parturition and number of relocations in the parturition interval. We used the maximum interval from the data that satisfies the threshold condition. 
 
 ## Input data
 
 *move/moveStack* in Movebank format and optional threshold speed and window length
 
 ## Output data
+
+*move/moveStack* in Movebank format
+
 ### Artefacts
- - Parturition_vel.pdf: pdf with the step-length plots with the marked threshold (red-dashed line) and parturition intervel (blue-dotted line)
- - Parturition_date_output.csv: csv with the individual id, partution time and parturiton lat-long
+ - Parturition_vel.pdf: pdf with the distance/time_interval plots with the marked threshold (red-dashed line) and parturition interval (blue-dotted line)
+ - Parturition_date_output.csv: csv with the individual id, parturition time and parturition lat-long
 
 ## Parameters
 
-*threshold*: A speed threshold (user specified) or averge calculated using input dataset
+*threshold*: A speed threshold (user specified) or average calculated using input dataset
 *window*: A window specified by user for calculation of moving average or **72 hours** used as default

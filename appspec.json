@@ -1,0 +1,139 @@
+{
+  "settings": [
+	{
+      "id": "meth",
+      "name": "Parturition detection",
+      "description": "Select which threshold level for speed you want to use. See more details in the App's documentation.",
+      "defaultValue": NULL,
+      "type": "RADIOBUTTONS",
+      "options": [
+		{
+          "value": "buff",
+          "displayText": "No Threshold value was chosen. Default value using mena would be used"
+        },
+		{
+          "value": "hclust",
+          "displayText": "Hierarchical clustering with average linkage."
+        }
+      ]
+    },
+	{
+      "id": "rad",
+      "name": "Cluster radius",
+      "description": "Define the radius (in m) within which your locations shall lie to define a cluster. Defaults to 200 m.",
+      "defaultValue": 200,
+      "type": "DOUBLE"
+    },
+	{
+      "id": "dur",
+      "name": "Minimum duration at a cluster",
+      "description": "Provide the minimum time duration (select unit below) that your animals need to be present at a cluster for including it in your results. Defaults to 1 (day).",
+      "defaultValue": 1,
+      "type": "DOUBLE"
+    },
+	{
+      "id": "dur_unit",
+      "name": "Time duration unit",
+      "description": "Select the unit for your duration time variable.",
+      "defaultValue": "days",
+      "type": "DROPDOWN",
+      "options": [
+        {
+          "value": "hours",
+          "displayText": "hour(s)"
+        },
+		{
+          "value": "days",
+          "displayText": "day(s)"
+        },
+		{
+          "value": "weeks",
+          "displayText": "week(s)"
+        }
+      ]
+    },
+,
+	{
+      "id": "maxgap",
+      "name": "Maximim gap duration between locations in a cluster",
+      "description": "Provide the maximum time gap that you allow between locations in a cluster (indep. of individual). Clusters will be split if there are larger gaps. Defaults to 1 (day).",
+      "defaultValue": 1,
+      "type": "DOUBLE"
+    },
+	{
+      "id": "gap_unit",
+      "name": "Gap duration unit",
+      "description": "Select the unit for your gap time variable.",
+      "defaultValue": "days",
+      "type": "DROPDOWN",
+      "options": [
+        {
+          "value": "hours",
+          "displayText": "hour(s)"
+        },
+		{
+          "value": "days",
+          "displayText": "day(s)"
+        },
+		{
+          "value": "weeks",
+          "displayText": "week(s)"
+        }
+      ]
+    }		
+  ],
+  "dependencies": {
+    "R": [
+      {
+        "name": "tidyverse"
+      },
+	  {
+        "name": "move"
+      },
+      {
+        "name": "zoo"
+      },
+	  {
+        "name": "readr"
+      },
+	  {
+        "name": "sf"
+      },
+	  {
+        "name": "rgeos"
+      }
+    ]
+  },
+  "createsArtifacts": true,
+  "license": {
+    "key": "MIT"
+  },
+  "language": "eng",
+  "keywords": [
+    "parturition",
+    "point cluster",
+    "cluster use",
+	"animal movement"
+  ],
+  "people": [
+    {
+      "firstName": "Nilanjan",
+      "middleInitials": null,
+      "lastName": "Chatterjee",
+      "email": "nilanjanchatterjee7@outlook.com",
+      "roles": ["author", "creator"],
+      "orcid": "0000-0003-0193-1563",
+      "affiliation": "University of Minnesota",
+      "affiliationRor": ""
+    },
+		
+  ],
+  "funding": [
+    {
+	"name": "NASA MoveApps Project"
+	},
+  ],
+  "documentation" : {
+    "url": "https://github.com/nilanjanchatterjee/parturition/blob/main/README.md"
+  }
+}
