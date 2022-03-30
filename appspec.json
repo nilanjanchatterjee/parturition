@@ -4,16 +4,12 @@
       "id": "meth",
       "name": "Parturition detection",
       "description": "Select which threshold level for speed you want to use. See more details in the App's documentation.",
-      "defaultValue": NULL,
-      "type": "RADIOBUTTONS",
+      "defaultValue": null,
+      "type": "DOUBLE",
       "options": [
 		{
-          "value": "buff",
+          "value": null,
           "displayText": "No Threshold value was chosen. Default value using mena would be used"
-        },
-		{
-          "value": "hclust",
-          "displayText": "Hierarchical clustering with average linkage."
         }
       ]
     },
@@ -51,37 +47,9 @@
           "displayText": "week(s)"
         }
       ]
-    },
-,
-	{
-      "id": "maxgap",
-      "name": "Maximim gap duration between locations in a cluster",
-      "description": "Provide the maximum time gap that you allow between locations in a cluster (indep. of individual). Clusters will be split if there are larger gaps. Defaults to 1 (day).",
-      "defaultValue": 1,
-      "type": "DOUBLE"
-    },
-	{
-      "id": "gap_unit",
-      "name": "Gap duration unit",
-      "description": "Select the unit for your gap time variable.",
-      "defaultValue": "days",
-      "type": "DROPDOWN",
-      "options": [
-        {
-          "value": "hours",
-          "displayText": "hour(s)"
-        },
-		{
-          "value": "days",
-          "displayText": "day(s)"
-        },
-		{
-          "value": "weeks",
-          "displayText": "week(s)"
-        }
-      ]
-    }		
-  ],
+    },  
+    ],
+    
   "dependencies": {
     "R": [
       {
@@ -122,7 +90,7 @@
       "lastName": "Chatterjee",
       "email": "nilanjanchatterjee7@outlook.com",
       "roles": ["author", "creator"],
-      "orcid": "0000-0003-0193-1563",
+      "orcid": "0000-0002-7932-0191",
       "affiliation": "University of Minnesota",
       "affiliationRor": ""
     },
