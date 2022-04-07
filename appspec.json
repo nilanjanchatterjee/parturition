@@ -14,40 +14,20 @@
       ]
     },
 	{
-      "id": "rad",
-      "name": "Cluster radius",
-      "description": "Define the radius (in m) within which your locations shall lie to define a cluster. Defaults to 200 m.",
-      "defaultValue": 200,
+      "id": "threshold",
+      "name": "Threshold speed",
+      "description": "Define the threshold speed (in m/s) within which an female restricts its movement while calving. Default is calculated using individualwise average",
+      "defaultValue": null,
       "type": "DOUBLE"
     },
 	{
-      "id": "dur",
-      "name": "Minimum duration at a cluster",
-      "description": "Provide the minimum time duration (select unit below) that your animals need to be present at a cluster for including it in your results. Defaults to 1 (day).",
-      "defaultValue": 1,
+      "id": "window",
+      "name": "Time window used to calculate change in movement",
+      "description": "Provide the minimum time duration (select unit below) that your animals need to be present at a cluster for including it in your results. Defaults to 3 (days).",
+      "defaultValue": 3,
       "type": "DOUBLE"
     },
-	{
-      "id": "dur_unit",
-      "name": "Time duration unit",
-      "description": "Select the unit for your duration time variable.",
-      "defaultValue": "days",
-      "type": "DROPDOWN",
-      "options": [
-        {
-          "value": "hours",
-          "displayText": "hour(s)"
-        },
-		{
-          "value": "days",
-          "displayText": "day(s)"
-        },
-		{
-          "value": "weeks",
-          "displayText": "week(s)"
-        }
-      ]
-    },  
+	,  
     ],
     
   "dependencies": {
