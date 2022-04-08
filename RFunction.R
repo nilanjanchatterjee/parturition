@@ -115,7 +115,14 @@ rFunction <-function(data, threshold=NULL, window=72){
   dev.off()
   
   dat_final <-do.call(rbind,dat_updt)
-  return(dat_final)
+  
+  ###Converting the data.frame output into move object
+  data_move <- move(x=dat_final$location.long, y=dat_final$location.lat, 
+                time=as.POSIXct(dat_final$timestamp,format="%Y-%m-%d %H:%M:%S"), 
+                data=dat_final, proj=CRS("+proj=longlat +ellps=WGS84"),
+                animal=dat_final$tag_local_identifier)
+  
+  return(data_move)
   
   names(dat_output) <-c("Individual_id", "Number_of_max_reloc", "Start_date", "End_date", "location_long", "location_lat")
   write.csv(dat_output, file= "Parturition_output.csv")
