@@ -1,34 +1,20 @@
 {
   "settings": [
 	{
-      "id": "meth",
-      "name": "Parturition detection",
-      "description": "Select which threshold level for speed you want to use. See more details in the App's documentation.",
-      "defaultValue": null,
-      "type": "DOUBLE",
-      "options": [
-		{
-          "value": null,
-          "displayText": "No Threshold value was chosen. Default value using mena would be used"
-        }
-      ]
-    },
-	{
       "id": "threshold",
       "name": "Threshold speed",
-      "description": "Define the threshold speed (in m/s) within which an female restricts its movement while calving. Default is calculated using individualwise average",
+      "description": "Define the threshold speed (in m/s) within which an female restricts its movement while calving. Default is calculated using individual average",
       "defaultValue": null,
       "type": "DOUBLE"
     },
 	{
       "id": "window",
       "name": "Time window used to calculate change in movement",
-      "description": "Provide the minimum time duration (select unit below) that your animals need to be present at a cluster for including it in your results. Defaults to 3 (days).",
+      "description": "Provide the minimum time duration (in days) that your animals need to be present at a cluster for including it in your results. Defaults to 3 (days).",
       "defaultValue": 3,
       "type": "DOUBLE"
-    },
-	,  
-    ],
+    } 
+  ],
     
   "dependencies": {
     "R": [
@@ -73,13 +59,12 @@
       "orcid": "0000-0002-7932-0191",
       "affiliation": "University of Minnesota",
       "affiliationRor": ""
-    },
-		
+    }		
   ],
   "funding": [
     {
 	"name": "NASA MoveApps Project"
-	},
+	}
   ],
   "documentation" : {
     "url": "https://github.com/nilanjanchatterjee/parturition/blob/main/README.md"

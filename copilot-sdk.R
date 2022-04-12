@@ -4,7 +4,7 @@ library(move)
 source("logger.R")
 source("RFunction.R")
 
-inputFileName = "input.rds"
+inputFileName = "App-Output Workflow_Instance_001__Distance_Between_Locations__2022-04-12_08-24-25.rds"
 outputFileName = "output.rds"
 
 args<-list()
@@ -12,8 +12,8 @@ args<-list()
 #################################################################
 ########################### Arguments ###########################
 
-args[["data"]] 
-args[["threshold"]]  
+args[["threshold"]] <- NULL
+args[["window"]] <- 72  
   
 #################################################################
 #################################################################
