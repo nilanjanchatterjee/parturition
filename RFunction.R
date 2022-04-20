@@ -1,6 +1,9 @@
+library(move)
 library(zoo)
 library(tidyverse)
 library(readr)
+library(sf)
+library(rgeos)
 
 rFunction <-function(data, threshold=NULL, window=72){
  
@@ -8,9 +11,9 @@ rFunction <-function(data, threshold=NULL, window=72){
   uid <-unique(data_df$tag_local_identifier)
   
   dat_output <-as.data.frame(uid) ## Save the different individuals 
-  plot.new()
+  #plot.new()
   
-  pdf("Parturition_vel.pdf", width = 8, height = 12)
+  pdf(paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"Parturition_vel.pdf"), width = 8, height = 12)
   par(mfrow=c(4,3), mar=c(4,4,3,1))
   
   ## if no values are specified as threshold then use the mean as the threshold
@@ -115,12 +118,13 @@ rFunction <-function(data, threshold=NULL, window=72){
   dev.off()
   
   dat_final <-do.call(rbind,dat_updt)
+  names(dat_final) <- make.names(names(dat_final),allow_=FALSE)
   
   ###Converting the data.frame output into move-stack object
   data_move <- move(x=dat_final$location.long, y=dat_final$location.lat, 
                 time=as.POSIXct(dat_final$timestamp,format="%Y-%m-%d %H:%M:%S"), 
                 data=dat_final, proj=CRS("+proj=longlat +ellps=WGS84"),
-                animal=dat_final$tag_local_identifier)
+                animal=dat_final$trackId)
   
   return(data_move)
   
