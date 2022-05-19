@@ -4,16 +4,53 @@ library(tidyverse)
 library(readr)
 library(sf)
 library(rgeos)
+library(units)
 
 rFunction <-function(data, threshold=NULL, window=72){
- 
+  units_options(allow_mixed = TRUE)
+  if(st_crs(crs(data))$IsGeographic){ ## using pkg units so units are kept for the future
+    unt <- "m" ## latlong result is in m/s
+  }else{
+    unt <- st_crs(crs(data))$units ## get units from projection
+  }
+  if(is.null(unt)){logger.warn("It seems that the projection does not have defined units, please check the projection in the study summary, and use changeProjection if necesary")} ## THIS WARNING HAS TO BE REWRITTEN!!!!! ITS BASICALLY A PLACEHOLDER. I actually do not know if this can happen, but just in case...
+  udunits_from_proj <-  list( ## function borrowed from R library "sf", and modified
+    #   PROJ.4     UDUNITS
+    `km` =    "km",
+    `m` =      "m",
+    `dm` =     "dm",
+    `cm` =     "cm",
+    `mm` =     "mm",
+    `kmi` =    "nautical_mile",
+    `in` =     "in",
+    `ft` =     "ft",
+    `yd` =     "yd",
+    `mi` =     "mi",
+    `fath` =   "fathom",
+    `ch` =     "chain",
+    `link` =   "link", # not (yet) existing; set in .onLoad()
+    `us-in` =  "us_in",
+    `us-ft` =  "US_survey_foot",
+    `us-yd` =  "US_survey_yard",
+    `us-ch` =  "chain",
+    `us-mi` =  "US_survey_mile",
+    `ind-yd` = "ind_yd",
+    `ind-ft` = "ind_ft", 
+    `ind-ch` = "ind_ch"
+  )
+  udunt <- udunits_from_proj[[unt]]
+  unts <- as_units(udunt, check_is_valid = FALSE)
+  data$distance <- set_units(unlist(lapply(distance(data), function(x) c(as.vector(x), NA))), unts, mode = "standard")
+  class(data$distance) <-"numeric"
   data_df <-as.data.frame(data)
   uid <-unique(data_df$tag_local_identifier)
   
   dat_output <-as.data.frame(uid) ## Save the different individuals 
   #plot.new()
+  dat_updt <-list()
   
-  pdf(paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"Parturition_vel.pdf"), width = 8, height = 12)
+  #paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
+  pdf("Parturition_vel.pdf", width = 8, height = 12)
   par(mfrow=c(4,3), mar=c(4,4,3,1))
   
   ## if no values are specified as threshold then use the mean as the threshold
