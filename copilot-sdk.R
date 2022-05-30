@@ -4,7 +4,8 @@ library(move)
 source("logger.R")
 source("RFunction.R")
 
-inputFileName = "input.rds"
+#inputFileName = "input.rds"
+inputFileName = "App-Output_ Caribou_parturition_BC_data___Filter_Data_by_Season__2022-05-10_18-10-45.rds"
 outputFileName = "output.rds"
 
 args<-list()
@@ -60,7 +61,7 @@ error = function(e) {
 
 if(!is.null(outputFileName) && outputFileName != "" && !is.null(result)) {
   logger.info(paste("Storing file to '", outputFileName, "'", sep = ""))
-  save(result, file = outputFileName)
+  saveRDS(result, file = outputFileName)
 } else {
   logger.warn("Skip store result: no output File or result is missing.")
 }
