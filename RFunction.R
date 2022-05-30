@@ -115,7 +115,7 @@ rFunction <-function(data, threshold=NULL, window=72){
         # it matches with the distance column for actual speed calculation
         data_temp$timediff <-  magic::shift(data_temp$timediff, -1) 
         data_temp <-data_temp %>% mutate(speed = distance/as.numeric(timediff)) %>%
-          mutate(rollm =rollapply(speed, 72/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA))
+          mutate(rollm =rollapply(speed, window/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA))
         ##moving average to be calculated over the window time
         
         ### Input condition for the clustering 
