@@ -10,7 +10,7 @@
 	{
       "id": "window",
       "name": "Time window used to calculate change in movement",
-      "description": "Provide the minimum time duration (select unit below) that your animals need to be present at a cluster for including it in your results. Defaults to 72 (hours).",
+      "description": "Provide the minimum time duration (in hours) that your animals need to be present at a cluster for including it in your results. Defaults to 72 (hours).",
       "defaultValue": 72,
       "type": "DOUBLE"
     }
@@ -57,7 +57,7 @@
       "firstName": "Nilanjan",
       "middleInitials": null,
       "lastName": "Chatterjee",
-      "email": "nilanjanchatterjee7@outlook.com",
+      "email": "nchatter@umn.edu",
       "roles": ["author", "creator"],
       "orcid": "0000-0002-7932-0191",
       "affiliation": "University of Minnesota",
