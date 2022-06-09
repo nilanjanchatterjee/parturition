@@ -154,7 +154,9 @@ rFunction <-function(data, threshold=NULL, window=72){
     
   }
   dev.off()
-  
+  names(dat_output) <-c("Individual_id", "Number_of_max_reloc", "Start_date", "End_date", "location_long", "location_lat")
+  write.csv(dat_output, file= paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"Parturition_output.csv"))
+                                           
   dat_final <-do.call(rbind,dat_updt)
   names(dat_final) <- make.names(names(dat_final),allow_=FALSE)
   
@@ -166,6 +168,5 @@ rFunction <-function(data, threshold=NULL, window=72){
   
   return(data_move)
   
-  names(dat_output) <-c("Individual_id", "Number_of_max_reloc", "Start_date", "End_date", "location_long", "location_lat")
-  write.csv(dat_output, file= paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"Parturition_output.csv"))
+ 
 }
