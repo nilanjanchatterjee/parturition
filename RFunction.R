@@ -43,6 +43,7 @@ rFunction <-function(data, threshold=NULL, window=72){
   data$distance <- set_units(unlist(lapply(distance(data), function(x) c(as.vector(x), NA))), unts, mode = "standard")
   class(data$distance) <-"numeric"
   data_df <-as.data.frame(data)
+  names(data_df) <- gsub("[.]", "_", names(data_df))
   uid <-unique(data_df$tag_local_identifier)
   
   dat_output <-as.data.frame(uid) ## Save the different individuals 
