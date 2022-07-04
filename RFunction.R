@@ -52,7 +52,7 @@ rFunction <-function(data, threshold=NULL, window=72){
   
   #paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
   pdf(paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"Parturition_vel.pdf"), width = 8, height = 12)
-  par(mfrow=c(4,3), mar=c(4,4,3,1))
+  par(mfrow=c(4,2), mar=c(4,4,3,1))
   
   ## if no values are specified as threshold then use the mean as the threshold
   if(is.null(threshold)){
@@ -94,12 +94,22 @@ rFunction <-function(data, threshold=NULL, window=72){
         dat_output[i, 5:6]<-NA
       }
       
+      ### Plot the step length with identified parturition time
       plot(data_temp$timestamp, data_temp$speed, main= uid[i], 
            ylab= expression(paste("Distance /", Delta, "t")), xlab= "Time")
       lines(data_temp$timestamp, data_temp$speed)
       abline(h=mean(data_temp$speed, na.rm=T), lty=2, lwd=2, col= "red")
       abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
       abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
+      
+      ### plot the spatial location with identified parturirion location
+      plot(data_temp$location_long, data_temp$location_lat, main= uid[i], xlab= "Longitude", ylab= "Latitude")
+      lines(data_temp$location_long, data_temp$location_lat, main= uid[i], xlab= "Longitude", ylab= "Latitude")
+      points(mean(data_temp$location_long[index.start:index.end]),
+             mean(data_temp$location_lat[index.start:index.end]), pch=4, cex=4, col= "blue")
+      points(mean(data_temp$location_long[index.start:index.end]),
+             mean(data_temp$location_lat[index.start:index.end]), pch=19, cex=2, col= "blue")
+      
     }
   }
   }
@@ -143,12 +153,22 @@ rFunction <-function(data, threshold=NULL, window=72){
           dat_output[i, 5:6]<-NA
         }
         
+        ### Plot the step length with identified parturition time
         plot(data_temp$timestamp, data_temp$speed, main= uid[i], 
-             xlab= expression(paste("Distance /", Delta, "t")), ylab= "Time")
+             ylab= expression(paste("Distance /", Delta, "t")), xlab= "Time")
         lines(data_temp$timestamp, data_temp$speed)
         abline(h=mean(data_temp$speed, na.rm=T), lty=2, lwd=2, col= "red")
         abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
         abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
+        
+        ### plot the spatial location with identified parturirion location
+        plot(data_temp$location_long, data_temp$location_lat, main= uid[i], xlab= "Longitude", ylab= "Latitude")
+        lines(data_temp$location_long, data_temp$location_lat, main= uid[i], xlab= "Longitude", ylab= "Latitude")
+        points(mean(data_temp$location_long[index.start:index.end]),
+               mean(data_temp$location_lat[index.start:index.end]), pch=4, cex=4, col= "blue")
+        points(mean(data_temp$location_long[index.start:index.end]),
+               mean(data_temp$location_lat[index.start:index.end]), pch=19, cex=2, col= "blue")
+        
       }
     }
     
