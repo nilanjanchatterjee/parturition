@@ -5,6 +5,7 @@ library(readr)
 library(sf)
 library(rgeos)
 library(units)
+library(geosphere)
 
 rFunction <-function(data, threshold=NULL, window=72){
   units_options(allow_mixed = TRUE)
@@ -52,7 +53,7 @@ rFunction <-function(data, threshold=NULL, window=72){
   
   #paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
   pdf(paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"Parturition_vel.pdf"), width = 8, height = 12)
-  par(mfrow=c(4,2), mar=c(4,4,3,1))
+  par(mfrow=c(4,3), mar=c(4,4,3,1))
   
   ## if no values are specified as threshold then use the mean as the threshold
   if(is.null(threshold)){
@@ -65,7 +66,10 @@ rFunction <-function(data, threshold=NULL, window=72){
       data_temp <-data_temp1 %>% mutate(timediff = timestamp- lag(timestamp))
       # the shift is used to move the first NA in time difference to the last position so that 
       # it matches with the distance column for actual speed calculation
-      data_temp$timediff <-  magic::shift(data_temp$timediff, -1) 
+      data_temp$timediff <-  magic::shift(data_temp$timediff, -1)
+      # Calculating the nsd using geosphere package to support the identified parturition 
+      data_temp$nsd <- geosphere::distm(cbind(data_temp$location_long,data_temp$location_lat), 
+                                        cbind(data_temp$location_long[1],data_temp$location_lat[1]), fun = geosphere::distHaversine)/1000
       data_temp <-data_temp %>% mutate(speed = distance/as.numeric(timediff)) %>%
         mutate(rollm =rollapply(speed, 72/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA))
       ##moving average to be calculated over the window time
@@ -80,7 +84,10 @@ rFunction <-function(data, threshold=NULL, window=72){
       
       dat_updt[[i]]<- data_temp ### append data for multiple individuals
       
-      index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)
+      ### Added the extra value as the rolling mean will show a earlier time compard to 
+      ### the actual parturition time
+      index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+
+        floor(window/median(as.numeric(timediff)))
       index.end   <- which.max(data_temp$run_positive)
       
       dat_output[i,2] <- max(data_temp$run_positive)
@@ -102,13 +109,19 @@ rFunction <-function(data, threshold=NULL, window=72){
       abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
       abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
       
-      ### plot the spatial location with identified parturirion location
+      ### plot the spatial location with identified parturition location
       plot(data_temp$location_long, data_temp$location_lat, main= uid[i], xlab= "Longitude", ylab= "Latitude")
       lines(data_temp$location_long, data_temp$location_lat, main= uid[i], xlab= "Longitude", ylab= "Latitude")
       points(mean(data_temp$location_long[index.start:index.end]),
              mean(data_temp$location_lat[index.start:index.end]), pch=4, cex=4, col= "blue")
       points(mean(data_temp$location_long[index.start:index.end]),
              mean(data_temp$location_lat[index.start:index.end]), pch=19, cex=2, col= "blue")
+      
+      ### plot the net-squared displacement along with the identified parturition time
+      plot(data_temp$timestamp, data_temp$nsd, type="l",main= uid[i], 
+           ylab= "Net squared displacement (km)", xlab= "Time")
+      abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
+      abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
       
     }
   }
@@ -125,6 +138,9 @@ rFunction <-function(data, threshold=NULL, window=72){
         # the shift is used to move the first NA in time difference to the last position so that 
         # it matches with the distance column for actual speed calculation
         data_temp$timediff <-  magic::shift(data_temp$timediff, -1) 
+        # Calculating the nsd using geosphere package to support the identified parturition 
+        data_temp$nsd <- geosphere::distm(cbind(data_temp$location_long,data_temp$location_lat), 
+                                          cbind(data_temp$location_long[1],data_temp$location_lat[1]), fun = geosphere::distHaversine)/1000
         data_temp <-data_temp %>% mutate(speed = distance/as.numeric(timediff)) %>%
           mutate(rollm =rollapply(speed, window/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA))
         ##moving average to be calculated over the window time
@@ -139,7 +155,8 @@ rFunction <-function(data, threshold=NULL, window=72){
         
         dat_updt[[i]]<- data_temp ### append data for multiple individuals
         
-        index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)
+        index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+
+          floor(window/median(as.numeric(timediff)))
         index.end   <- which.max(data_temp$run_positive)
           
         dat_output[i,2] <- max(data_temp$run_positive)
@@ -169,6 +186,11 @@ rFunction <-function(data, threshold=NULL, window=72){
         points(mean(data_temp$location_long[index.start:index.end]),
                mean(data_temp$location_lat[index.start:index.end]), pch=19, cex=2, col= "blue")
         
+        ### plot the net-squared displacement along with the identified parturition time
+        plot(data_temp$timestamp, data_temp$nsd, type="l",main= uid[i], 
+             ylab= "Net squared displacement (km)", xlab= "Time")
+        abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
+        abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
       }
     }
     
