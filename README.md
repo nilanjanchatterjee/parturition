@@ -5,7 +5,7 @@ Github repository: https://github.com/nilanjanchatterjee/parturition
 
 ## Description
 
-The app predicts time, location and length of parturition events from tracking data. It uses the input as *move/movestack* as the output is given in the form of step-length plots with the marked threshold (red-dashed line) and the parturition time (blue-dotted line) and csv with the individual id, parturition time and the lat-long of the parturition event.
+The app predicts time, location and length of parturition events from tracking data. It uses the input as *move/movestack* as the output is given in the form of step-length plot, spatial locations and net-squared displacment with the marked threshold (red-dashed line) and the identified parturition time (blue-dotted line) and csv with the individual id, parturition time and the lat-long of the parturition event.
 
 ## Documentation
 
