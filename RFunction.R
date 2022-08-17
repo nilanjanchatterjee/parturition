@@ -87,7 +87,7 @@ rFunction <-function(data, threshold=NULL, window=72){
       ### Added the extra value as the rolling mean will show a earlier time compard to 
       ### the actual parturition time
       index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+
-        floor(window/median(as.numeric(timediff)))
+        floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
       index.end   <- which.max(data_temp$run_positive)
       
       dat_output[i,2] <- max(data_temp$run_positive)
@@ -156,7 +156,7 @@ rFunction <-function(data, threshold=NULL, window=72){
         dat_updt[[i]]<- data_temp ### append data for multiple individuals
         
         index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+
-          floor(window/median(as.numeric(timediff)))
+          floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
         index.end   <- which.max(data_temp$run_positive)
           
         dat_output[i,2] <- max(data_temp$run_positive)
