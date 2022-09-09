@@ -63,7 +63,8 @@ rFunction <-function(data, threshold=NULL, window=72){
     if(dim(data_temp1)[1]>10) ## To filter individuals with very few relocations
     {
       ## calculates the difference between consecutive timestamp
-      data_temp <-data_temp1 %>% mutate(timediff = timestamp- lag(timestamp))
+      data_temp <-data_temp1 %>% 
+        mutate(timediff = as.numeric(as.POSIXct(data_temp1$timestamp)- as.POSIXct(lag(data_temp1$timestamp)), units = "hours"))
       # the shift is used to move the first NA in time difference to the last position so that 
       # it matches with the distance column for actual speed calculation
       data_temp$timediff <-  magic::shift(data_temp$timediff, -1)
@@ -134,7 +135,8 @@ rFunction <-function(data, threshold=NULL, window=72){
       if(dim(data_temp1)[1]>10) ## To filter individuals with very few relocations
       {
         ## calculates the difference between consecutive timestamp
-        data_temp <-data_temp1 %>% mutate(timediff = timestamp- lag(timestamp))
+        data_temp <-data_temp1 %>% 
+          mutate(timediff = as.numeric(as.POSIXct(data_temp1$timestamp)- as.POSIXct(lag(data_temp1$timestamp)), units = "hours"))
         # the shift is used to move the first NA in time difference to the last position so that 
         # it matches with the distance column for actual speed calculation
         data_temp$timediff <-  magic::shift(data_temp$timediff, -1) 
