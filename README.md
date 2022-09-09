@@ -21,7 +21,10 @@ Based on the filter it calculates the parturition interval, location of the part
 *move/moveStack* in Movebank format
 
 ### Artefacts
- - Parturition_vel.pdf: pdf with the distance/time_interval plots with the marked threshold (red-dashed line) and parturition interval (blue-dotted line)    
+ - Parturition_vel.pdf: pdf with three plots per individual; 
+1. The distance/time_interval plots with the marked threshold (red-dashed line) and parturition interval (blue-dotted line)    
+2. The spatial locations of the individual with the identified parturition location marked with a blue cross
+3. Net-squared displacement plot for the individual with the identified parturirion interval with blue dotted line 
  
  - Parturition_date_output.csv: csv with the individual id, parturition time and parturition lat-long
 
