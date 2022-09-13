@@ -3,7 +3,7 @@
 	{
       "id": "threshold",
       "name": "Threshold speed",
-      "description": "Define the threshold speed (in m/s) within which an female restricts its movement while calving. Default is calculated using individualwise average",
+      "description": "Define the threshold speed (in m/h) within which an female restricts its movement while calving. Default is calculated using individual wise average",
       "defaultValue": null,
       "type": "DOUBLE"
     },
