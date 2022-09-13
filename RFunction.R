@@ -45,7 +45,7 @@ rFunction <-function(data, threshold=NULL, window=72){
   class(data$distance) <-"numeric"
   data_df <-as.data.frame(data)
   names(data_df) <- gsub("[.]", "_", names(data_df))
-  uid <-unique(data_df$tag_local_identifier)
+  uid <-unique(data_df$trackId)
   
   dat_output <-as.data.frame(uid) ## Save the different individuals 
   #plot.new()
@@ -59,9 +59,10 @@ rFunction <-function(data, threshold=NULL, window=72){
   if(is.null(threshold)){
   for(i in 1:length(uid))
   {
-    data_temp1 <-subset(data_df, data_df$tag_local_identifier==uid[i])
-    if(dim(data_temp1)[1]>10) ## To filter individuals with very few relocations
-    {
+    data_temp1 <-subset(data_df, data_df$trackId==uid[i])
+    tint <-as.numeric(as.POSIXct(max(data_temp1$timestamp)) - as.POSIXct(min(data_temp1$timestamp)), units="hours")
+    if(dim(data_temp1)[1]>10 & tint > window) ## To filter individuals with very few relocations
+    { 
       ## calculates the difference between consecutive timestamp
       data_temp <-data_temp1 %>% 
         mutate(timediff = as.numeric(as.POSIXct(data_temp1$timestamp)- as.POSIXct(lag(data_temp1$timestamp)), units = "hours"))
@@ -72,7 +73,7 @@ rFunction <-function(data, threshold=NULL, window=72){
       data_temp$nsd <- geosphere::distm(cbind(data_temp$location_long,data_temp$location_lat), 
                                         cbind(data_temp$location_long[1],data_temp$location_lat[1]), fun = geosphere::distHaversine)/1000
       data_temp <-data_temp %>% mutate(speed = distance/as.numeric(timediff)) %>%
-        mutate(rollm =rollapply(speed, 72/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA))
+        mutate(rollm =rollapply(speed, window/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA))
       ##moving average to be calculated over the window time
       
       ### Input condition for the clustering 
@@ -87,8 +88,7 @@ rFunction <-function(data, threshold=NULL, window=72){
       
       ### Added the extra value as the rolling mean will show a earlier time compard to 
       ### the actual parturition time
-      index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+
-        floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
+      index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+ 1
       index.end   <- which.max(data_temp$run_positive)
       
       dat_output[i,2] <- max(data_temp$run_positive)
@@ -131,8 +131,9 @@ rFunction <-function(data, threshold=NULL, window=72){
   {
     for(i in 1:length(uid))
     {
-      data_temp1 <-subset(data_df, data_df$tag_local_identifier==uid[i])
-      if(dim(data_temp1)[1]>10) ## To filter individuals with very few relocations
+      data_temp1 <-subset(data_df, data_df$trackId==uid[i])
+      tint <-as.numeric(as.POSIXct(max(data_temp1$timestamp)) - as.POSIXct(min(data_temp1$timestamp)), units="hours")
+      if(dim(data_temp1)[1]>10 & tint > window) ## To filter individuals with very few relocations
       {
         ## calculates the difference between consecutive timestamp
         data_temp <-data_temp1 %>% 
@@ -157,8 +158,7 @@ rFunction <-function(data, threshold=NULL, window=72){
         
         dat_updt[[i]]<- data_temp ### append data for multiple individuals
         
-        index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+
-          floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
+        index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+1
         index.end   <- which.max(data_temp$run_positive)
           
         dat_output[i,2] <- max(data_temp$run_positive)
@@ -198,7 +198,7 @@ rFunction <-function(data, threshold=NULL, window=72){
     
   }
   dev.off()
-  names(dat_output) <-c("Individual_id", "Number_of_max_reloc", "Start_date", "End_date", "location_long", "location_lat")
+  names(dat_output) <-c("Individual_id", "Number_of_max_reloc", "Threshold_speed(m/h)","Start_date", "End_date", "location_long", "location_lat")
   write.csv(dat_output, file= paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"Parturition_output.csv"))
                                            
   dat_final <-do.call(rbind,dat_updt)
