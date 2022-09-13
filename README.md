@@ -26,7 +26,7 @@ Based on the filter it calculates the parturition interval, location of the part
 2. The spatial locations of the individual with the identified parturition location marked with a blue cross
 3. Net-squared displacement plot for the individual with the identified parturirion interval with blue dotted line 
  
- - Parturition_date_output.csv: csv with the individual id, parturition time and parturition lat-long
+ - Parturition_date_output.csv: csv with the individual id, parturition time-interval, individual speed threshold and parturition lat-long
 
 ## Parameters
 
