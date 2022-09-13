@@ -92,14 +92,15 @@ rFunction <-function(data, threshold=NULL, window=72){
       index.end   <- which.max(data_temp$run_positive)
       
       dat_output[i,2] <- max(data_temp$run_positive)
-      dat_output[i,3] <- data_temp$timestamp[index.start]
-      dat_output[i,4] <- data_temp$timestamp[index.end]
-      if(!is.na(dat_output[i,3])){
-        dat_output[i,5] <- data_temp$location_long[index.start]
-        dat_output[i,6] <- data_temp$location_lat[index.start]
+      dat_output[i,3] <- mean(data_temp$rollm, na.rm=T)
+      dat_output[i,4] <- data_temp$timestamp[index.start]
+      dat_output[i,5] <- data_temp$timestamp[index.end]
+      if(!is.na(dat_output[i,4])){
+        dat_output[i,6] <- data_temp$location_long[index.start]
+        dat_output[i,7] <- data_temp$location_lat[index.start]
       } else
       {
-        dat_output[i, 5:6]<-NA
+        dat_output[i, 6:7]<-NA
       }
       
       ### Plot the step length with identified parturition time
@@ -162,14 +163,15 @@ rFunction <-function(data, threshold=NULL, window=72){
         index.end   <- which.max(data_temp$run_positive)
           
         dat_output[i,2] <- max(data_temp$run_positive)
-        dat_output[i,3] <- data_temp$timestamp[index.start]
-        dat_output[i,4] <- data_temp$timestamp[index.end]
-        if(!is.na(dat_output[i,3])){
-          dat_output[i,5] <- data_temp$location_long[index.start]
-          dat_output[i,6] <- data_temp$location_lat[index.start]
+        dat_output[i,3] <- threshold
+        dat_output[i,4] <- data_temp$timestamp[index.start]
+        dat_output[i,5] <- data_temp$timestamp[index.end]
+        if(!is.na(dat_output[i,4])){
+          dat_output[i,6] <- data_temp$location_long[index.start]
+          dat_output[i,7] <- data_temp$location_lat[index.start]
         } else
         {
-          dat_output[i, 5:6]<-NA
+          dat_output[i, 6:7]<-NA
         }
         
         ### Plot the step length with identified parturition time
