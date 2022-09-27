@@ -10,7 +10,7 @@ The app estimates time, location and length of parturition events from tracking 
 ## Documentation
 
 The app should be run in a workflow following the App *Filter Data by Season* that allows filtering to the parturition season. The App *Filter by Animal Data* can likewise be used to limit the analysis to females. This app uses an individual filter and calculates the step-wise speed for each relocation. Then it filters the location based on the threshold provided by the user or calculates using the average from the dataset. There are pros and cons for both the choices and user discretion and knowledge should be used. 
-Based on the filter it calculates the parturition interval, location of the parturition and number of relocations in the parturition interval. The app selects the maximum time interval from the data that satisfies the threshold condition. The calving time and location are identified as the start of the parturition interval and individual's location at that time.
+Based on the filter it calculates the parturition interval, location of the parturition and number of relocations in the parturition interval. The app selects the maximum time interval from the data that satisfies the threshold condition. The calving time and location are identified as the start of the parturition interval and individual's location at that time. Up to one parturition event can be calculated from each data segment, identified as trackId. Therefore, if prior apps break an individual's movements up into seasonal segments over multiple years, the app will run the algorithm separately for each animal-year.
 
 ## Input data
 
@@ -26,7 +26,7 @@ Based on the filter it calculates the parturition interval, location of the part
 2. The spatial locations of the individual with the identified parturition location marked with a blue cross
 3. The net-squared displacement plot for the individual with the identified parturition interval marked with blue dotted lines 
  
- - Parturition_date_output.csv: csv with the individual id, the speed threshold used, the start and end of the parturition interval, the individual's location at the start of the parturition interval, and the number of relocations in the parturition interval
+ - Parturition_output.csv: csv with the individual id, the speed threshold used, the start and end of the parturition interval, the individual's location at the start of the parturition interval, and the number of relocations in the parturition interval
 
 ## Parameters
 
