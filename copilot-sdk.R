@@ -2,9 +2,10 @@ library(jsonlite)
 library(move)
 
 source("logger.R")
-source("RFunction.R")
+source("RFunction_local_test.R")
 
-inputFileName = "input.rds"
+#inputFileName = "input.rds"
+inputFileName = "GNWT_Dehcho_Boreal_Woodland_Caribou.rds"
 #inputFileName = "App-Output_ Caribou_parturition_BC_data___Filter_Data_by_Season__2022-05-10_18-10-45.rds"
 outputFileName = "output.rds"
 
@@ -15,7 +16,7 @@ args<-list()
 
 args[["threshold"]] <- NULL
 args[["window"]] <- 72
-
+#args[["yaxs_limit"]]<-NULL
 #################################################################
 #################################################################
 

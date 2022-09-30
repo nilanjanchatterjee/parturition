@@ -7,7 +7,7 @@ library(rgeos)
 library(units)
 library(geosphere)
 
-rFunction <-function(data, threshold=NULL, window=72){
+rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   units_options(allow_mixed = TRUE)
   if(st_crs(crs(data))$IsGeographic){ ## using pkg units so units are kept for the future
     unt <- "m" ## latlong result is in m/s
@@ -69,6 +69,7 @@ rFunction <-function(data, threshold=NULL, window=72){
       # the shift is used to move the first NA in time difference to the last position so that 
       # it matches with the distance column for actual speed calculation
       data_temp$timediff <-  magic::shift(data_temp$timediff, -1)
+      data_temp<-subset(data_temp, timediff !=0)
       # Calculating the nsd using geosphere package to support the identified parturition 
       data_temp$nsd <- geosphere::distm(cbind(data_temp$location_long,data_temp$location_lat), 
                                         cbind(data_temp$location_long[1],data_temp$location_lat[1]), fun = geosphere::distHaversine)/1000
@@ -91,22 +92,28 @@ rFunction <-function(data, threshold=NULL, window=72){
       index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+ 1
       index.end   <- which.max(data_temp$run_positive)
       
-      dat_output[i,2] <- max(data_temp$run_positive)
-      dat_output[i,3] <- mean(data_temp$rollm, na.rm=T)
-      dat_output[i,4] <- data_temp$timestamp[index.start]
-      dat_output[i,5] <- data_temp$timestamp[index.end]
+      dat_output[i,2] <- unique(data_temp$local_identifier)
+      dat_output[i,3] <- max(data_temp$run_positive)
+      dat_output[i,4] <- mean(data_temp$rollm, na.rm=T)
+      dat_output[i,5] <- data_temp$timestamp[index.start]
+      dat_output[i,6] <- data_temp$timestamp[index.end]
       if(!is.na(dat_output[i,4])){
-        dat_output[i,6] <- data_temp$location_long[index.start]
-        dat_output[i,7] <- data_temp$location_lat[index.start]
+        dat_output[i,7] <- data_temp$location_long[index.start] ##Change the start
+        dat_output[i,8] <- data_temp$location_lat[index.start]
       } else
       {
-        dat_output[i, 6:7]<-NA
+        dat_output[i, 7:8]<-NA
       }
       
       ### Plot the step length with identified parturition time
+      rp = vector('expression',2)
+      rp[1] = substitute(expression("Parturition time"))[2]
+      rp[2] = as.character(data_temp$timestamp[index.start])
+      
       plot(data_temp$timestamp, data_temp$speed, main= uid[i], 
            ylab= expression(paste("Distance /", Delta, "t")), xlab= "Time")
       lines(data_temp$timestamp, data_temp$speed)
+      legend('topright', legend = rp, bty = 'n')
       abline(h=mean(data_temp$speed, na.rm=T), lty=2, lwd=2, col= "red")
       abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
       abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
@@ -142,6 +149,7 @@ rFunction <-function(data, threshold=NULL, window=72){
         # the shift is used to move the first NA in time difference to the last position so that 
         # it matches with the distance column for actual speed calculation
         data_temp$timediff <-  magic::shift(data_temp$timediff, -1) 
+        data_temp<-subset(data_temp, timediff !=0)
         # Calculating the nsd using geosphere package to support the identified parturition 
         data_temp$nsd <- geosphere::distm(cbind(data_temp$location_long,data_temp$location_lat), 
                                           cbind(data_temp$location_long[1],data_temp$location_lat[1]), fun = geosphere::distHaversine)/1000
@@ -162,22 +170,28 @@ rFunction <-function(data, threshold=NULL, window=72){
         index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+1
         index.end   <- which.max(data_temp$run_positive)
           
-        dat_output[i,2] <- max(data_temp$run_positive)
-        dat_output[i,3] <- threshold
-        dat_output[i,4] <- data_temp$timestamp[index.start]
-        dat_output[i,5] <- data_temp$timestamp[index.end]
+        dat_output[i,2] <- unique(data_temp$local_identifier)
+        dat_output[i,3] <- max(data_temp$run_positive)
+        dat_output[i,4] <- threshold
+        dat_output[i,5] <- data_temp$timestamp[index.start]
+        dat_output[i,6] <- data_temp$timestamp[index.end]
         if(!is.na(dat_output[i,4])){
-          dat_output[i,6] <- data_temp$location_long[index.start]
-          dat_output[i,7] <- data_temp$location_lat[index.start]
+          dat_output[i,7] <- data_temp$location_long[index.start] ##Change the start
+          dat_output[i,8] <- data_temp$location_lat[index.start]
         } else
         {
-          dat_output[i, 6:7]<-NA
+          dat_output[i, 7:8]<-NA
         }
         
         ### Plot the step length with identified parturition time
+        rp = vector('expression',2)
+        rp[1] = substitute(expression("Parturition time"))[2]
+        rp[2] = as.character(data_temp$timestamp[index.start])
+        
         plot(data_temp$timestamp, data_temp$speed, main= uid[i], 
              ylab= expression(paste("Distance /", Delta, "t")), xlab= "Time")
         lines(data_temp$timestamp, data_temp$speed)
+        legend('topright', legend = rp, bty = 'n')
         abline(h=mean(data_temp$speed, na.rm=T), lty=2, lwd=2, col= "red")
         abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
         abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
@@ -200,7 +214,7 @@ rFunction <-function(data, threshold=NULL, window=72){
     
   }
   dev.off()
-  names(dat_output) <-c("Individual_id", "Number_of_max_reloc", "Threshold_speed(m/h)","Start_date", "End_date", "location_long", "location_lat")
+  names(dat_output) <-c("Track_id","Individual_id", "Number_of_max_reloc", "Threshold_speed(m/h)","Start_date", "End_date", "location_long", "location_lat")
   write.csv(dat_output, file= paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"Parturition_output.csv"))
                                            
   dat_final <-do.call(rbind,dat_updt)
