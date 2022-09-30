@@ -2,11 +2,11 @@ library(jsonlite)
 library(move)
 
 source("logger.R")
-source("RFunction_local_test.R")
+source("RFunction.R")
 
-#inputFileName = "input.rds"
-inputFileName = "GNWT_Dehcho_Boreal_Woodland_Caribou.rds"
-#inputFileName = "App-Output_ Caribou_parturition_BC_data___Filter_Data_by_Season__2022-05-10_18-10-45.rds"
+inputFileName = "input.rds"
+#inputFileName = "GNWT_Dehcho_Boreal_Woodland_Caribou.rds"
+
 outputFileName = "output.rds"
 
 args<-list()
