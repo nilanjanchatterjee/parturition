@@ -92,7 +92,19 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
       index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+ 1
       index.end   <- which.max(data_temp$run_positive)
       
-      dat_output[i,2] <- unique(data_temp$local_identifier)
+      #dat_output[i,2] <- unique(data_temp$local_identifier) #ERROR
+      if (any(names(data_temp)=="local_identifier")) #need to account for the fact that not all data sets have the variable local_identifier or individual_local_identifier
+      {
+        dat_output[i,2] <- unique(data_temp$local_identifier)
+      } else if (any(names(data_temp)=="individual_local_identifier"))
+      {
+        dat_output[i,2] <- unique(data_temp$individual_local_identifier)
+      } else
+      {
+          logger.info("There is no standard variable for animal ID in your data set, therefore trackId is used.")
+          dat_output[i,2] <- unique(data_temp$trackId)
+      }
+      
       dat_output[i,3] <- max(data_temp$run_positive)
       dat_output[i,4] <- mean(data_temp$rollm, na.rm=T)
       dat_output[i,5] <- data_temp$timestamp[index.start]
@@ -170,7 +182,19 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
         index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+1
         index.end   <- which.max(data_temp$run_positive)
           
-        dat_output[i,2] <- unique(data_temp$local_identifier)
+        #dat_output[i,2] <- unique(data_temp$local_identifier) #ERROR
+        if (any(names(data_temp)=="local_identifier")) #need to account for the fact that not all data sets have the variable local_identifier or individual_local_identifier
+        {
+          dat_output[i,2] <- unique(data_temp$local_identifier)
+        } else if (any(names(data_temp)=="individual_local_identifier"))
+        {
+          dat_output[i,2] <- unique(data_temp$individual_local_identifier)
+        } else
+        {
+          logger.info("There is no standard variable for animal ID in your data set, therefore trackId is used.")
+          dat_output[i,2] <- unique(data_temp$trackId)
+        }
+        
         dat_output[i,3] <- max(data_temp$run_positive)
         dat_output[i,4] <- threshold
         dat_output[i,5] <- data_temp$timestamp[index.start]
