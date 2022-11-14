@@ -51,7 +51,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   #plot.new()
   dat_updt <-list()
   
-  #paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
+  #pdf("Parturition_vely.pdf", width = 8, height = 12)
   pdf(paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"Parturition_vel.pdf"), width = 8, height = 12)
   par(mfrow=c(4,3), mar=c(4,4,3,1))
   
@@ -84,6 +84,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
       ### Count the sequence length and print the maximum length time
       data_temp$run <-sequence(rle(data_temp$cnd)$lengths)
       data_temp$run_positive <- ifelse(data_temp$cnd == 0, 0, data_temp$run)
+      cutoff<- floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
       
       dat_updt[[i]]<- data_temp ### append data for multiple individuals
       
@@ -97,18 +98,23 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
       dat_output[i,4] <- mean(data_temp$rollm, na.rm=T)
       dat_output[i,5] <- data_temp$timestamp[index.start]
       dat_output[i,6] <- data_temp$timestamp[index.end]
+      dat_output[i,7] <- tabulate(data_temp$run_positive)[cutoff+1]
       if(!is.na(dat_output[i,4])){
-        dat_output[i,7] <- data_temp$location_long[index.start] ##Change the start
-        dat_output[i,8] <- data_temp$location_lat[index.start]
+        dat_output[i,8] <- data_temp$location_long[index.start] ##Change the start
+        dat_output[i,9] <- data_temp$location_lat[index.start]
       } else
       {
-        dat_output[i, 7:8]<-NA
+        dat_output[i, 8:9]<-NA
       }
+      
       
       ### Plot the step length with identified parturition time
       rp = vector('expression',2)
       rp[1] = substitute(expression("Parturition time"))[2]
-      rp[2] = as.character(data_temp$timestamp[index.start])
+      rp[2] = ifelse(as.character(data_temp$timestamp[index.start])=="NULL", 
+                     as.character(data_temp$timestamp[index.end]),
+                     as.character(data_temp$timestamp[index.start]))
+      
       
       plot(data_temp$timestamp, data_temp$speed, main= uid[i], 
            ylab= expression(paste("Distance /", Delta, "t")), xlab= "Time")
@@ -164,6 +170,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
         ### Count the sequence length and print the maximum length time
         data_temp$run <-sequence(rle(data_temp$cnd)$lengths)
         data_temp$run_positive <- ifelse(data_temp$cnd == 0, 0, data_temp$run)
+        cutoff<- floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
         
         dat_updt[[i]]<- data_temp ### append data for multiple individuals
         
@@ -175,18 +182,22 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
         dat_output[i,4] <- threshold
         dat_output[i,5] <- data_temp$timestamp[index.start]
         dat_output[i,6] <- data_temp$timestamp[index.end]
+        dat_output[i,7] <- tabulate(data_temp$run_positive)[cutoff+1]
         if(!is.na(dat_output[i,4])){
-          dat_output[i,7] <- data_temp$location_long[index.start] ##Change the start
-          dat_output[i,8] <- data_temp$location_lat[index.start]
+          dat_output[i,8] <- data_temp$location_long[index.start] ##Change the start
+          dat_output[i,9] <- data_temp$location_lat[index.start]
         } else
         {
-          dat_output[i, 7:8]<-NA
+          dat_output[i, 8:9]<-NA
         }
         
         ### Plot the step length with identified parturition time
         rp = vector('expression',2)
         rp[1] = substitute(expression("Parturition time"))[2]
-        rp[2] = as.character(data_temp$timestamp[index.start])
+        rp[2] = ifelse(as.character(data_temp$timestamp[index.start])=="NULL", 
+                       as.character(data_temp$timestamp[index.end]),
+                       as.character(data_temp$timestamp[index.start]))
+        
         
         plot(data_temp$timestamp, data_temp$speed, main= uid[i], 
              ylab= expression(paste("Distance /", Delta, "t")), xlab= "Time")
@@ -214,9 +225,11 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
     
   }
   dev.off()
-  names(dat_output) <-c("Track_id","Individual_id", "Number_of_max_reloc", "Threshold_speed(m/h)","Start_date", "End_date", "location_long", "location_lat")
+  names(dat_output) <-c("Track_id", "Individual_id", "Number_of_max_reloc","Threshold_speed(m/h)",
+                        "Start_date", "End_date", "Numbers_of\ndetected_events","location_long", "location_lat")
+  
   write.csv(dat_output, file= paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"Parturition_output.csv"))
-                                           
+  #write.csv(dat_output,"Parturition_outputy.csv")
   dat_final <-do.call(rbind,dat_updt)
   names(dat_final) <- make.names(names(dat_final),allow_=FALSE)
   
