@@ -110,7 +110,8 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
       dat_output[i,4] <- mean(data_temp$rollm, na.rm=T)
       dat_output[i,5] <- data_temp$timestamp[index.start]
       dat_output[i,6] <- data_temp$timestamp[index.end]
-      dat_output[i,7] <- tabulate(data_temp$run_positive)[cutoff+1]
+      dat_output[i,7] <- ifelse(is.na(tabulate(data_temp$run_positive)[cutoff+1]),1,
+                                tabulate(data_temp$run_positive)[cutoff+1])
       if(!is.na(dat_output[i,4])){
         dat_output[i,8] <- data_temp$location_long[index.start] ##Change the start
         dat_output[i,9] <- data_temp$location_lat[index.start]
@@ -206,7 +207,8 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
         dat_output[i,4] <- threshold
         dat_output[i,5] <- data_temp$timestamp[index.start]
         dat_output[i,6] <- data_temp$timestamp[index.end]
-        dat_output[i,7] <- tabulate(data_temp$run_positive)[cutoff+1]
+        dat_output[i,7] <- ifelse(is.na(tabulate(data_temp$run_positive)[cutoff+1]),1,
+                                  tabulate(data_temp$run_positive)[cutoff+1])
         if(!is.na(dat_output[i,4])){
           dat_output[i,8] <- data_temp$location_long[index.start] ##Change the start
           dat_output[i,9] <- data_temp$location_lat[index.start]
