@@ -83,7 +83,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
       
       ### Count the sequence length and print the maximum length time
       data_temp$run <-sequence(rle(data_temp$cnd)$lengths)
-      data_temp$run_positive <- ifelse(data_temp$cnd == 0, 0, data_temp$run)
+      data_temp$run_positive <- as.numeric(ifelse(data_temp$cnd == 0, 0, data_temp$run))
       cutoff<- floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
       
       dat_updt[[i]]<- data_temp ### append data for multiple individuals
@@ -182,7 +182,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
         
         ### Count the sequence length and print the maximum length time
         data_temp$run <-sequence(rle(data_temp$cnd)$lengths)
-        data_temp$run_positive <- ifelse(data_temp$cnd == 0, 0, data_temp$run)
+        data_temp$run_positive <- as.numeric(ifelse(data_temp$cnd == 0, 0, data_temp$run))
         cutoff<- floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
         
         dat_updt[[i]]<- data_temp ### append data for multiple individuals
