@@ -214,37 +214,47 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
         data_temp$run <-sequence(rle(data_temp$cnd)$lengths)
         data_temp$run_positive <- as.numeric(ifelse(data_temp$cnd == 0, 0, data_temp$run))
         cutoff<- floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
+        data_temp$crun <- abs(data_temp$run_positive - lag(data_temp$run_positive))
+        data_temp$crun[nrow(data_temp)] <-data_temp$run_positive[nrow(data_temp)]
         
         dat_updt[[i]]<- data_temp ### append data for multiple individuals
         
-        index.start <- which.max(data_temp$run_positive)-max(data_temp$run_positive)+1
-        index.end   <- which.max(data_temp$run_positive)
-          
-        #dat_output[i,2] <- unique(data_temp$local_identifier) #ERROR
-        if (any(names(data_temp)=="local_identifier")) #need to account for the fact that not all data sets have the variable local_identifier or individual_local_identifier
-        {
-          dat_output[i,2] <- unique(data_temp$local_identifier)
-        } else if (any(names(data_temp)=="individual_local_identifier"))
-        {
-          dat_output[i,2] <- unique(data_temp$individual_local_identifier)
-        } else
-        {
-          logger.info("There is no standard variable for animal ID in your data set, therefore trackId is used.")
-          dat_output[i,2] <- unique(data_temp$trackId)
-        }
+        nrun<- ifelse(is.na(tabulate(data_temp$run_positive)[cutoff+1]),1,
+                      tabulate(data_temp$run_positive)[cutoff+1])
+        dat_output <-data.frame()
         
-        dat_output[i,3] <- max(data_temp$run_positive)
-        dat_output[i,4] <- threshold
-        dat_output[i,5] <- data_temp$timestamp[index.start]
-        dat_output[i,6] <- data_temp$timestamp[index.end]
-        dat_output[i,7] <- ifelse(is.na(tabulate(data_temp$run_positive)[cutoff+1]),1,
-                                  tabulate(data_temp$run_positive)[cutoff+1])
-        if(!is.na(dat_output[i,4])){
-          dat_output[i,8] <- data_temp$location_long[index.start] ##Change the start
-          dat_output[i,9] <- data_temp$location_lat[index.start]
-        } else
-        {
-          dat_output[i, 8:9]<-NA
+        for(j in 1:nrun){
+          dat_output[j,1] <- uid[i]
+          #dat_output[i,2] <- unique(data_temp$local_identifier) #ERROR
+          if (any(names(data_temp)=="local_identifier")) #need to account for the fact that not all data sets have the variable local_identifier or individual_local_identifier
+          {
+            dat_output[j,2] <- unique(data_temp$local_identifier)
+          } else if (any(names(data_temp)=="individual_local_identifier"))
+          {
+            dat_output[j,2] <- unique(data_temp$individual_local_identifier)
+          } else
+          {
+            logger.info("There is no standard variable for animal ID in your data set, therefore trackId is used.")
+            dat_output[j,2] <- unique(data_temp$trackId)
+          }
+          nrun_ind <- which(data_temp$crun > cutoff)
+          ### Added the extra value as the rolling mean will show a earlier time compard to 
+          ### the actual parturition time
+          index.start <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j]-data_temp$run_positive[nrun_ind[j]-1])
+          index.end   <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j])
+          
+          dat_output[j,3] <- ifelse(length(nrun_ind)==0,NA,data_temp$run_positive[nrun_ind[j]-1])
+          dat_output[j,4] <- mean(data_temp$rollm, na.rm=T)
+          dat_output[j,5] <- ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.start])
+          dat_output[j,6] <- ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.end])
+          dat_output[j,7] <- nrun
+          if(!is.na(dat_output[j,4])){
+            dat_output[j,8] <- ifelse(length(nrun_ind)==0,NA,mean(data_temp$location_long[index.start:index.end], na.rm=T)) ##Change the start
+            dat_output[j,9] <- ifelse(length(nrun_ind)==0,NA,mean(data_temp$location_lat[index.start:index.end], na.rm=T))
+          } else
+          {
+            dat_output[j, 8:9]<-NA
+          }
         }
         
         dat_fin_output[[i]] <- dat_output
