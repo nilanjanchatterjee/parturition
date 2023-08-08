@@ -6,6 +6,7 @@ library(sf)
 library(rgeos)
 library(units)
 library(geosphere)
+library(lubridate)
 
 rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   units_options(allow_mixed = TRUE)
@@ -50,37 +51,43 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   ###  Function for plotting the individual speed
   plot_speed <-function(dat, dat_outp)
   {
-    plot(dat$timestamp, dat$speed, main= uid[i], cex=0.5, #ylim=c(0,400),
-         ylab= expression(paste("Distance /", Delta, "t")), xlab= "Time")
-    lines(dat$timestamp, dat$speed)
-    lines(dat$timestamp, dat$rollm, col ="brown", lwd=2)
+    yr <- year(dat_outp$timestamp[1])
+    plot(dat$timestamp, dat$speed, main= paste(uid[i], yr, sep = "_"), cex=0.4, #ylim=c(0,400),
+         ylab= expression(paste("Distance /", Delta, "t")), xlab= "Time", col= "grey40")
+    lines(dat$timestamp, dat$speed,col= "grey30", main= paste(uid[i], yr, sep = "_"))
+    lines(dat$timestamp, dat$rollm, col ="brown4", lwd=1.5, main= paste(uid[i], yr, sep = "_"))
     #legend('topright', legend = rp, bty = 'n')
-    abline(h=mean(dat$speed, na.rm=T), lty=2, lwd=2, col= "red")
+    abline(h=mean(dat$speed, na.rm=T), lty=3, lwd=2, col= "coral")
     for (i in 1:nrow(dat_outp))
-    {abline(v= dat_outp$V5, lty=3, lwd=2, col= "blue")
-      abline(v= dat_outp$V6, lty=3, lwd=2, col= "blue")
+    {abline(v= dat_outp$V5, lty=2, lwd=1.5, col= "green4")
+      abline(v= dat_outp$V6, lty=4, lwd=1.5, col= "royalblue")
     }
   }
   
   ###  Function for plotting the individual location
   plot_loc <-function(dat, dat_outp)
   {
-  plot(dat$location_long, dat$location_lat, main= uid[i], xlab= "Longitude", ylab= "Latitude")
-  lines(dat$location_long, dat$location_lat, main= uid[i], xlab= "Longitude", ylab= "Latitude")
+    yr <- year(dat_outp$timestamp[1])
+  plot(dat$location_long, dat$location_lat, main= paste(uid[i], yr, sep = "_"), 
+       xlab= "Longitude", ylab= "Latitude", cex=0.4)
+  lines(dat$location_long, dat$location_lat, main= paste(uid[i], yr, sep = "_"), 
+        xlab= "Longitude", ylab= "Latitude")
   for(i in 1: nrow(dat_outp))
-  {points(dat_outp$V8,dat_outp$V9, pch=4, cex=4, col= "blue")
-    points(dat_outp$V8,dat_outp$V9, pch=19, cex=2, col= "blue")
+  {points(dat_outp$V8,dat_outp$V9, pch=4, cex=3, col= "green4")
+    points(dat_outp$V8,dat_outp$V9, pch=19, cex=1.5, col= "royalblue")
   }
     }
  
   ### plot the net-squared displacement along with the identified parturition time
   plot_nsd <-function(dat, dat_outp)
   {
-  plot(dat$timestamp, dat$nsd, type="l",main= uid[i], 
+    yr <- year(dat_outp$timestamp[1])
+  plot(dat$timestamp, dat$nsd, type="l",main= paste(uid[i], yr, sep = "_"), 
        ylab= "Net squared displacement (km)", xlab= "Time")
+  lines(dat$timestamp, dat$rollnsd, col ="brown4", lwd=1)
     for(i in 1: nrow(dat_outp)){
-      abline(v= dat_outp$V5, lty=3, lwd=2, col= "blue")
-      abline(v= dat_outp$V6, lty=3, lwd=2, col= "blue")
+      abline(v= dat_outp$V5, lty=2, lwd=1.5, col= "green4")
+      abline(v= dat_outp$V6, lty=4, lwd=1.5, col= "royalblue")
       
     }
   }
@@ -111,9 +118,11 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
       data_temp<-subset(data_temp, timediff !=0)
       # Calculating the nsd using geosphere package to support the identified parturition 
       data_temp$nsd <- geosphere::distm(cbind(data_temp$location_long,data_temp$location_lat), 
-                                        cbind(data_temp$location_long[1],data_temp$location_lat[1]), fun = geosphere::distHaversine)/1000
+                                        cbind(data_temp$location_long[1],data_temp$location_lat[1]), 
+                                        fun = geosphere::distHaversine)/1000
       data_temp <-data_temp %>% mutate(speed = distance/as.numeric(timediff)) %>%
-        mutate(rollm =rollapply(speed, window/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA))
+        mutate(rollm =rollapply(speed, window/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA),
+               rollnsd = rollapply(nsd, window/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA))
       ##moving average to be calculated over the window time
       
       ### Input condition for the clustering 
