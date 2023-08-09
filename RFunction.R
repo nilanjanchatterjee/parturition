@@ -49,10 +49,10 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   uid <-unique(data_df$trackId)
   
   ###  Function for plotting the individual speed
-  plot_speed <-function(dat, dat_outp)
+  plot_speed <-function(dat, dat_outp, yul=1000)
   {
-    yr <- year(dat_outp$timestamp[1])
-    plot(dat$timestamp, dat$speed, main= paste(uid[i], yr, sep = "_"), cex=0.4, #ylim=c(0,400),
+    yr <- year(dat$timestamp[1])
+    plot(dat$timestamp, dat$speed, main= paste(uid[i], yr, sep = "_"), cex=0.4, ylim=c(0,yul),
          ylab= expression(paste("Distance /", Delta, "t")), xlab= "Time", col= "grey40")
     lines(dat$timestamp, dat$speed,col= "grey30", main= paste(uid[i], yr, sep = "_"))
     lines(dat$timestamp, dat$rollm, col ="brown4", lwd=1.5, main= paste(uid[i], yr, sep = "_"))
@@ -67,7 +67,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   ###  Function for plotting the individual location
   plot_loc <-function(dat, dat_outp)
   {
-    yr <- year(dat_outp$timestamp[1])
+    yr <- year(dat$timestamp[1])
   plot(dat$location_long, dat$location_lat, main= paste(uid[i], yr, sep = "_"), 
        xlab= "Longitude", ylab= "Latitude", cex=0.4)
   lines(dat$location_long, dat$location_lat, main= paste(uid[i], yr, sep = "_"), 
@@ -81,7 +81,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   ### plot the net-squared displacement along with the identified parturition time
   plot_nsd <-function(dat, dat_outp)
   {
-    yr <- year(dat_outp$timestamp[1])
+    yr <- year(dat$timestamp[1])
   plot(dat$timestamp, dat$nsd, type="l",main= paste(uid[i], yr, sep = "_"), 
        ylab= "Net squared displacement (km)", xlab= "Time")
   lines(dat$timestamp, dat$rollnsd, col ="brown4", lwd=1)
