@@ -96,9 +96,9 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   dat_updt <-list()
   dat_fin_output <-list()
   
-  pdf("Parturition_velney.pdf", width = 8, height = 12)
-  # pdf(paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
-  #            paste("Parturition_vel",window,".pdf")), width = 8, height = 12)
+  #pdf("Parturition_velney.pdf", width = 8, height = 12)
+  pdf(paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
+              paste("Parturition_vel",window,".pdf")), width = 8, height = 12)
   par(mfrow=c(4,3), mar=c(4,4,3,1))
   
   ## if no values are specified as threshold then use the mean as the threshold
@@ -279,28 +279,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
         plot_loc(data_temp, dat_output)
         plot_nsd(data_temp, dat_output)
         
-        # plot(data_temp$timestamp, data_temp$speed, main= uid[i], cex=0.5,
-        #      ylab= expression(paste("Distance /", Delta, "t")), xlab= "Time")
-        # lines(data_temp$timestamp, data_temp$speed)
-        # lines(data_temp$timestamp, data_temp$rollm, col ="grey30", lwd=2)
-        # legend('topright', legend = rp, bty = 'n')
-        # abline(h=mean(data_temp$speed, na.rm=T), lty=2, lwd=2, col= "red")
-        # abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
-        # abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
-        # 
-        # ### plot the spatial location with identified parturirion location
-        # plot(data_temp$location_long, data_temp$location_lat, main= uid[i], xlab= "Longitude", ylab= "Latitude")
-        # lines(data_temp$location_long, data_temp$location_lat, main= uid[i], xlab= "Longitude", ylab= "Latitude")
-        # points(mean(data_temp$location_long[index.start:index.end]),
-        #        mean(data_temp$location_lat[index.start:index.end]), pch=4, cex=4, col= "blue")
-        # points(mean(data_temp$location_long[index.start:index.end]),
-        #        mean(data_temp$location_lat[index.start:index.end]), pch=19, cex=2, col= "blue")
-        # 
-        # ### plot the net-squared displacement along with the identified parturition time
-        # plot(data_temp$timestamp, data_temp$nsd, type="l",main= uid[i], 
-        #      ylab= "Net squared displacement (km)", xlab= "Time")
-        # abline(v= data_temp$timestamp[index.end], lty=3, lwd=2, col= "blue")
-        # abline(v= data_temp$timestamp[index.start], lty=3, lwd=2, col= "blue")
+        
       }
     }
     
@@ -312,9 +291,10 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   dat_final <-do.call(rbind,dat_updt)
   dat_final_output <- do.call(rbind, dat_fin_output)
   names(dat_final) <- make.names(names(dat_final),allow_=FALSE)
-  # write.csv(dat_final_output, file= paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
-  #                                    paste("Parturition_output",window,".csv")))
-  write.csv(dat_output,"Parturition_outputy.csv")
+  
+  write.csv(dat_final_output, file= paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
+                                      paste("Parturition_output",window,".csv")))
+  #write.csv(dat_output,"Parturition_outputy.csv")
   
   ###Converting the data.frame output into move-stack object
   data_move <- move(x=dat_final$location.long, y=dat_final$location.lat, 
