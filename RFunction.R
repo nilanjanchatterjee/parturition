@@ -120,9 +120,9 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
       data_temp$timediff <-  magic::shift(data_temp$timediff, -1)
       data_temp<-subset(data_temp, timediff !=0)
       # Calculating the nsd using geosphere package to support the identified parturition 
-      data_temp$nsd <- geosphere::distm(cbind(data_temp$location_long,data_temp$location_lat), 
-                                        cbind(data_temp$location_long[1],data_temp$location_lat[1]), 
-                                        fun = geosphere::distHaversine)/1000
+      data_temp$nsd <- distVincentyEllipsoid(cbind(data_temp$location_long,data_temp$location_lat), 
+                                             cbind(data_temp$location_long[1],data_temp$location_lat[1]))/1000
+      
       data_temp <-data_temp %>% mutate(speed = distance/as.numeric(timediff)) %>%
         mutate(rollm =rollapply(speed, window/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA),
                rollnsd = rollapply(nsd, window/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA))
@@ -212,8 +212,9 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         data_temp$timediff <-  magic::shift(data_temp$timediff, -1) 
         data_temp<-subset(data_temp, timediff !=0)
         # Calculating the nsd using geosphere package to support the identified parturition 
-        data_temp$nsd <- geosphere::distm(cbind(data_temp$location_long,data_temp$location_lat), 
-                                          cbind(data_temp$location_long[1],data_temp$location_lat[1]), fun = geosphere::distHaversine)/1000
+        data_temp$nsd <- distVincentyEllipsoid(cbind(data_temp$location_long,data_temp$location_lat), 
+                                          cbind(data_temp$location_long[1],data_temp$location_lat[1]))/1000
+        
         data_temp <-data_temp %>% mutate(speed = distance/as.numeric(timediff)) %>%
           mutate(rollm =rollapply(speed, window/median(as.numeric(timediff), na.rm=T), mean, na.rm=T, fill=NA))
         ##moving average to be calculated over the window time
