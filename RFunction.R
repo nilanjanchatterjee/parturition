@@ -8,12 +8,14 @@ library(units)
 library(geosphere)
 library(lubridate)
 
-rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
+rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
+  data <- data |> mutate(location_long = sf::st_coordinates(.)[,1],
+                         location_lat = sf::st-coordinates(.)[2])
   units_options(allow_mixed = TRUE)
-  if(st_crs(crs(data))$IsGeographic){ ## using pkg units so units are kept for the future
+  if(st_crs(data)$IsGeographic){ ## using pkg units so units are kept for the future
     unt <- "m" ## latlong result is in m/s
   }else{
-    unt <- st_crs(crs(data))$units ## get units from projection
+    unt <- st_crs(data)$units ## get units from projection
   }
   if(is.null(unt)){logger.warn("It seems that the projection does not have defined units, please check the projection in the study summary, and use changeProjection if necesary")} ## THIS WARNING HAS TO BE REWRITTEN!!!!! ITS BASICALLY A PLACEHOLDER. I actually do not know if this can happen, but just in case...
   udunits_from_proj <-  list( ## function borrowed from R library "sf", and modified
@@ -42,14 +44,15 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   )
   udunt <- udunits_from_proj[[unt]]
   unts <- as_units(udunt, check_is_valid = FALSE)
-  data$distance <- set_units(unlist(lapply(distance(data), function(x) c(as.vector(x), NA))), unts, mode = "standard")
+  data$distance <- set_units(mt_distance(data), 
+      unts, mode = "standard")
   class(data$distance) <-"numeric"
   data_df <-as.data.frame(data)
   names(data_df) <- gsub("[.]", "_", names(data_df))
-  uid <-unique(data_df$trackId)
+  uid <-unique(data_df$individual_local_identifier)
   
   ###  Function for plotting the individual speed
-  plot_speed <-function(dat, dat_outp, yul=1000)
+  plot_speed <-function(dat, dat_outp, yul=yaxs_limit)
   {
     yr <- year(dat$timestamp[1])
     plot(dat$timestamp, dat$speed, main= paste(uid[i], yr, sep = "_"), cex=0.4, ylim=c(0,yul),
@@ -105,7 +108,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   if(is.null(threshold)){
   for(i in 1:length(uid))
   {
-    data_temp1 <-subset(data_df, data_df$trackId==uid[i])
+    data_temp1 <-subset(data_df, data_df$individual_local_identifier ==uid[i])
     tint <-as.numeric(as.POSIXct(max(data_temp1$timestamp)) - as.POSIXct(min(data_temp1$timestamp)), units="hours")
     if(dim(data_temp1)[1]>10 & tint > window) ## To filter individuals with very few relocations
     { 
@@ -297,10 +300,13 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=NULL){
   #write.csv(dat_output,"Parturition_outputy.csv")
   
   ###Converting the data.frame output into move-stack object
-  data_move <- move(x=dat_final$location.long, y=dat_final$location.lat, 
-                time=as.POSIXct(dat_final$timestamp,format="%Y-%m-%d %H:%M:%S"), 
-                data=dat_final, proj=CRS("+proj=longlat +ellps=WGS84"),
-                animal=dat_final$trackId)
+  data_move <- mt_as_move2(dat_final, coords = c("location.long", "location.lat"),
+                           time_column = "timestamp", crs = 4326, 
+                           track_id_column = "Individual.tag.idnetifier")
+    # move(x=dat_final$location.long, y=dat_final$location.lat, 
+    #             time=as.POSIXct(dat_final$timestamp,format="%Y-%m-%d %H:%M:%S"), 
+    #             data=dat_final, proj=CRS("+proj=longlat +ellps=WGS84"),
+    #             animal=dat_final$trackId)
   
   return(data_move)
   
