@@ -11,45 +11,13 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
   
    data <- data |> mutate(location_long = sf::st_coordinates(data)[,1],
                          location_lat = sf::st_coordinates(data)[,2])
-  units_options(allow_mixed = TRUE)
-  if(st_crs(data)$IsGeographic){ ## using pkg units so units are kept for the future
-    unt <- "m" ## latlong result is in m/s
-  }else{
-    unt <- st_crs(data)$units ## get units from projection
-  }
-  if(is.null(unt)){logger.warn("It seems that the projection does not have defined units, please check the projection in the study summary, and use changeProjection if necesary")} ## THIS WARNING HAS TO BE REWRITTEN!!!!! ITS BASICALLY A PLACEHOLDER. I actually do not know if this can happen, but just in case...
-  udunits_from_proj <-  list( ## function borrowed from R library "sf", and modified
-    #   PROJ.4     UDUNITS
-    `km` =    "km",
-    `m` =      "m",
-    `dm` =     "dm",
-    `cm` =     "cm",
-    `mm` =     "mm",
-    `kmi` =    "nautical_mile",
-    `in` =     "in",
-    `ft` =     "ft",
-    `yd` =     "yd",
-    `mi` =     "mi",
-    `fath` =   "fathom",
-    `ch` =     "chain",
-    `link` =   "link", # not (yet) existing; set in .onLoad()
-    `us-in` =  "us_in",
-    `us-ft` =  "US_survey_foot",
-    `us-yd` =  "US_survey_yard",
-    `us-ch` =  "chain",
-    `us-mi` =  "US_survey_mile",
-    `ind-yd` = "ind_yd",
-    `ind-ft` = "ind_ft", 
-    `ind-ch` = "ind_ch"
-  )
-  udunt <- udunits_from_proj[[unt]]
-  unts <- as_units(udunt, check_is_valid = FALSE)
-  data$distance <- set_units(mt_distance(data), 
-      unts, mode = "standard")
+
+   data$distance <- mt_distance(data, units="m") # like this units will always be in meters, please adjust to the units you see most fit
   class(data$distance) <-"numeric"
   data_df <-as.data.frame(data)
   names(data_df) <- gsub("[.]", "_", names(data_df))
-  uid <-unique(data_df$individual_local_identifier)
+  # uid <-unique(data_df$individual_local_identifier)
+  uid <-unique(mt_track_id(data)) # in the move2 object, tracks are not necessarily defined by the individual local identifier, often also by deployment id or whatever the user sees fit. To make your code universal, I recommend you to move away from the individual local identifier and stick to the track id throughout the entire code. As you are working on a data frame, you can just add a column with the track id e.g. data_df$trackID<-mt_track_data(data), and that you are safe.
   
   ###  Function for plotting the individual speed
   plot_speed <-function(dat, dat_outp, yul=yaxs_limit)
