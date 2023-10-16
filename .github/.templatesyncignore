@@ -1,0 +1,10 @@
+RFunction.R
+README.md
+renv/
+*.Rproj
+appspec.json
+app-configuration.json
+data/local_app_files/
+tests/testthat/test_RFunction.R
+# backward compatibility
+co-pilot-sdk.R
