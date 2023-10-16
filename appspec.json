@@ -22,22 +22,19 @@
         "name": "tidyverse"
       },
 	  {
-        "name": "move"
+        "name": "move2"
       },
       {
         "name": "zoo"
       },
 	  {
-        "name": "readr"
-      },
-	  {
         "name": "sf"
-      },
-	  {
-        "name": "rgeos"
       },
 	    {
 	    "name": "magic"
+	    },
+	    {
+	    "name": "units"
 	    },
 	    {
 	    "name": "geosphere"

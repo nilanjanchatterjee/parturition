@@ -1,16 +1,16 @@
-library(move)
+library(move2)
 library(zoo)
-library(tidyverse)
-library(readr)
+library(tidyverse, quietly = TRUE)
 library(sf)
-library(rgeos)
 library(units)
+library(magic)
 library(geosphere)
 library(lubridate)
 
 rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
-  data <- data |> mutate(location_long = sf::st_coordinates(.)[,1],
-                         location_lat = sf::st-coordinates(.)[2])
+  
+   data <- data |> mutate(location_long = sf::st_coordinates(data)[,1],
+                         location_lat = sf::st_coordinates(data)[,2])
   units_options(allow_mixed = TRUE)
   if(st_crs(data)$IsGeographic){ ## using pkg units so units are kept for the future
     unt <- "m" ## latlong result is in m/s
@@ -303,7 +303,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
   ###Converting the data.frame output into move-stack object
   data_move <- mt_as_move2(dat_final, coords = c("location.long", "location.lat"),
                            time_column = "timestamp", crs = 4326, 
-                           track_id_column = "Individual.tag.idnetifier")
+                           track_id_column = "individual.local.identifier")
     # move(x=dat_final$location.long, y=dat_final$location.lat, 
     #             time=as.POSIXct(dat_final$timestamp,format="%Y-%m-%d %H:%M:%S"), 
     #             data=dat_final, proj=CRS("+proj=longlat +ellps=WGS84"),

@@ -5,7 +5,7 @@ source("logger.R")
 source("RFunction.R")
 
 inputFileName = "input.rds"
-#inputFileName = "GNWT_Dehcho_Boreal_Woodland_Caribou.rds"
+#inputFileName = "Yahatinda_move2.rds"
 
 outputFileName = "output.rds"
 
@@ -16,7 +16,7 @@ args<-list()
 
 args[["threshold"]] <- NULL
 args[["window"]] <- 72
-#args[["yaxs_limit"]]<-NULL
+args[["yaxs_limit"]]<-1000
 #################################################################
 #################################################################
 
