@@ -10,14 +10,16 @@ library(lubridate)
 rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
   
    data <- data |> mutate(location_long = sf::st_coordinates(data)[,1],
-                         location_lat = sf::st_coordinates(data)[,2])
+                         location_lat = sf::st_coordinates(data)[,2],
+                         trackID = mt_track_id(data),
+                         distance = mt_distance(data))
 
-   data$distance <- mt_distance(data, units="m") # like this units will always be in meters, please adjust to the units you see most fit
+   #data$distance <- mt_distance(data, units="m") # like this units will always be in meters, please adjust to the units you see most fit
   class(data$distance) <-"numeric"
   data_df <-as.data.frame(data)
   names(data_df) <- gsub("[.]", "_", names(data_df))
   # uid <-unique(data_df$individual_local_identifier)
-  uid <-unique(mt_track_id(data)) # in the move2 object, tracks are not necessarily defined by the individual local identifier, often also by deployment id or whatever the user sees fit. To make your code universal, I recommend you to move away from the individual local identifier and stick to the track id throughout the entire code. As you are working on a data frame, you can just add a column with the track id e.g. data_df$trackID<-mt_track_data(data), and that you are safe.
+  uid <-unique(data$trackID) 
   
   ###  Function for plotting the individual speed
   plot_speed <-function(dat, dat_outp, yul=yaxs_limit)
@@ -76,7 +78,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
   if(is.null(threshold)){
   for(i in 1:length(uid))
   {
-    data_temp1 <-subset(data_df, data_df$individual_local_identifier ==uid[i])
+    data_temp1 <-subset(data_df, data_df$trackID ==uid[i])
     tint <-as.numeric(as.POSIXct(max(data_temp1$timestamp)) - as.POSIXct(min(data_temp1$timestamp)), units="hours")
     if(dim(data_temp1)[1]>10 & tint > window) ## To filter individuals with very few relocations
     { 
@@ -149,13 +151,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
       }
       
       dat_fin_output[[i]] <- dat_output
-      ### Plot the step length with identified parturition time
-      # rp = vector('expression',2)
-      # rp[1] = substitute(expression("Parturition time"))[2]
-      # rp[2] = ifelse(as.character(data_temp$timestamp[index.start])=="NULL", 
-      #                as.character(data_temp$timestamp[index.end]),
-      #                as.character(data_temp$timestamp[index.start]))
-       
+      
    #plot the  figures    
       plot_speed(data_temp, dat_output)
       plot_loc(data_temp, dat_output)
@@ -239,12 +235,6 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         }
         
         dat_fin_output[[i]] <- dat_output
-        ### Plot the step length with identified parturition time
-        # rp = vector('expression',2)
-        # rp[1] = substitute(expression("Parturition time"))[2]
-        # rp[2] = ifelse(as.character(data_temp$timestamp[index.start])=="NULL", 
-        #                as.character(data_temp$timestamp[index.end]),
-        #                as.character(data_temp$timestamp[index.start]))
         
         #plot the  figures    
         plot_speed(data_temp, dat_output)
@@ -271,11 +261,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
   ###Converting the data.frame output into move-stack object
   data_move <- mt_as_move2(dat_final, coords = c("location.long", "location.lat"),
                            time_column = "timestamp", crs = 4326, 
-                           track_id_column = "individual.local.identifier")
-    # move(x=dat_final$location.long, y=dat_final$location.lat, 
-    #             time=as.POSIXct(dat_final$timestamp,format="%Y-%m-%d %H:%M:%S"), 
-    #             data=dat_final, proj=CRS("+proj=longlat +ellps=WGS84"),
-    #             animal=dat_final$trackId)
+                           track_id_column = "trackID")
   
   return(data_move)
   
