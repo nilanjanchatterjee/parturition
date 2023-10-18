@@ -107,7 +107,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
       data_temp$run_positive <- as.numeric(ifelse(data_temp$cnd == 0, 0, data_temp$run))
       cutoff<- floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
       data_temp$crun <- abs(data_temp$run_positive - lag(data_temp$run_positive))
-      data_temp$crun[nrow(data_temp)] <-data_temp$run_positive[nrow(data_temp)]
+      data_temp$crun[nrow(data_temp)] <-data_temp$run_positive[nrow(data_temp)-1]
       
       dat_updt[[i]]<- data_temp ### append data for multiple individuals
       
@@ -118,19 +118,19 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
       
       for(j in 1:nrun){
         dat_output[j,1] <- uid[i]
-        #dat_output[i,2] <- unique(data_temp$local_identifier) #ERROR
-        if (any(names(data_temp)=="local_identifier")) #need to account for the fact that not all data sets have the variable local_identifier or individual_local_identifier
-        {
-          dat_output[j,2] <- unique(data_temp$local_identifier)
-        } else if (any(names(data_temp)=="individual_local_identifier"))
-        {
-          dat_output[j,2] <- unique(data_temp$individual_local_identifier)
-        } else
-        {
-          logger.info("There is no standard variable for animal ID in your data set, therefore trackId is used.")
-          dat_output[j,2] <- unique(data_temp$trackId)
-        }
-        nrun_ind <- which(data_temp$crun > cutoff)
+        dat_output[i,2] <- unique(data_temp$trackID) #ERROR
+        # if (any(names(data_temp)=="local_identifier")) #need to account for the fact that not all data sets have the variable local_identifier or individual_local_identifier
+        # {
+        #   dat_output[j,2] <- unique(data_temp$local_identifier)
+        # } else if (any(names(data_temp)=="individual_local_identifier"))
+        # {
+        #   dat_output[j,2] <- unique(data_temp$individual_local_identifier)
+        # } else
+        # {
+        #   logger.info("There is no standard variable for animal ID in your data set, therefore trackId is used.")
+        #   dat_output[j,2] <- unique(data_temp$trackId)
+        # }
+        nrun_ind <- which(data_temp$crun >= cutoff)
         ### Added the extra value as the rolling mean will show a earlier time compard to 
         ### the actual parturition time
         index.start <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j]-data_temp$run_positive[nrun_ind[j]-1])
@@ -192,7 +192,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         data_temp$run_positive <- as.numeric(ifelse(data_temp$cnd == 0, 0, data_temp$run))
         cutoff<- floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
         data_temp$crun <- abs(data_temp$run_positive - lag(data_temp$run_positive))
-        data_temp$crun[nrow(data_temp)] <-data_temp$run_positive[nrow(data_temp)]
+        data_temp$crun[nrow(data_temp)] <-data_temp$run_positive[nrow(data_temp)-1]
         
         dat_updt[[i]]<- data_temp ### append data for multiple individuals
         
@@ -202,19 +202,19 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         
         for(j in 1:nrun){
           dat_output[j,1] <- uid[i]
-          #dat_output[i,2] <- unique(data_temp$local_identifier) #ERROR
-          if (any(names(data_temp)=="local_identifier")) #need to account for the fact that not all data sets have the variable local_identifier or individual_local_identifier
-          {
-            dat_output[j,2] <- unique(data_temp$local_identifier)
-          } else if (any(names(data_temp)=="individual_local_identifier"))
-          {
-            dat_output[j,2] <- unique(data_temp$individual_local_identifier)
-          } else
-          {
-            logger.info("There is no standard variable for animal ID in your data set, therefore trackId is used.")
-            dat_output[j,2] <- unique(data_temp$trackId)
-          }
-          nrun_ind <- which(data_temp$crun > cutoff)
+          dat_output[i,2] <- unique(data_temp$trackID) #ERROR
+          # if (any(names(data_temp)=="local_identifier")) #need to account for the fact that not all data sets have the variable local_identifier or individual_local_identifier
+          # {
+          #   dat_output[j,2] <- unique(data_temp$local_identifier)
+          # } else if (any(names(data_temp)=="individual_local_identifier"))
+          # {
+          #   dat_output[j,2] <- unique(data_temp$individual_local_identifier)
+          # } else
+          # {
+          #   logger.info("There is no standard variable for animal ID in your data set, therefore trackId is used.")
+          #   dat_output[j,2] <- unique(data_temp$trackId)
+          # }
+          nrun_ind <- which(data_temp$crun >= cutoff)
           ### Added the extra value as the rolling mean will show a earlier time compard to 
           ### the actual parturition time
           index.start <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j]-data_temp$run_positive[nrun_ind[j]-1])
