@@ -138,8 +138,8 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         
         dat_output[j,3] <- ifelse(length(nrun_ind)==0,NA,data_temp$run_positive[nrun_ind[j]-1])
         dat_output[j,4] <- mean(data_temp$rollm, na.rm=T)
-        dat_output[j,5] <- ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.start])
-        dat_output[j,6] <- ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.end])
+        dat_output[j,5] <- as.POSIXct(ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.start]), origin = "1970-01-01")
+        dat_output[j,6] <- as.POSIXct(ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.end]), origin = "1970-01-01")
         dat_output[j,7] <- nrun
         if(!is.na(dat_output[j,4])){
           dat_output[j,8] <- ifelse(length(nrun_ind)==0,NA,mean(data_temp$location_long[index.start:index.end], na.rm=T)) ##Change the start
@@ -164,7 +164,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
   {
     for(i in 1:length(uid))
     {
-      data_temp1 <-subset(data_df, data_df$trackId==uid[i])
+      data_temp1 <-subset(data_df, data_df$trackID==uid[i])
       tint <-as.numeric(as.POSIXct(max(data_temp1$timestamp)) - as.POSIXct(min(data_temp1$timestamp)), units="hours")
       if(dim(data_temp1)[1]>10 & tint > window) ## To filter individuals with very few relocations
       {
@@ -202,7 +202,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         
         for(j in 1:nrun){
           dat_output[j,1] <- uid[i]
-          dat_output[i,2] <- unique(data_temp$trackID) #ERROR
+          dat_output[j,2] <- unique(data_temp$trackID) #ERROR
           # if (any(names(data_temp)=="local_identifier")) #need to account for the fact that not all data sets have the variable local_identifier or individual_local_identifier
           # {
           #   dat_output[j,2] <- unique(data_temp$local_identifier)
@@ -222,8 +222,8 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
           
           dat_output[j,3] <- ifelse(length(nrun_ind)==0,NA,data_temp$run_positive[nrun_ind[j]-1])
           dat_output[j,4] <- mean(data_temp$rollm, na.rm=T)
-          dat_output[j,5] <- ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.start])
-          dat_output[j,6] <- ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.end])
+          dat_output[j,5] <- as.POSIXct(ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.start]), origin = "1970-01-01")
+          dat_output[j,6] <- as.POSIXct(ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.end]), origin = "1970-01-01")
           dat_output[j,7] <- nrun
           if(!is.na(dat_output[j,4])){
             dat_output[j,8] <- ifelse(length(nrun_ind)==0,NA,mean(data_temp$location_long[index.start:index.end], na.rm=T)) ##Change the start
@@ -247,16 +247,17 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
     
   }
   dev.off()
-  names(dat_output) <-c("Track_id", "Individual_id", "Number_of_max_reloc","Threshold_speed(m/h)",
-                        "Start_date", "End_date", "Numbers_of\ndetected_events","location_long", "location_lat")
-  
+    
   dat_final <-do.call(rbind,dat_updt)
   dat_final_output <- do.call(rbind, dat_fin_output)
+  names(dat_final_output) <-c("Track_id", "Individual_id", "Number_of_max_reloc","Threshold_speed(m/h)",
+                              "Start_date", "End_date", "Numbers_of\ndetected_events","location_long", "location_lat")
+  
   names(dat_final) <- make.names(names(dat_final),allow_=FALSE)
   
   write.csv(dat_final_output, file= paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
-                                      paste("Parturition_output",window,".csv")))
-  #write.csv(dat_output,"Parturition_outputy.csv")
+                                       paste("Parturition_output",window,".csv")))
+  #write.csv(dat_output,"Parturition_output2510.csv")
   
   ###Converting the data.frame output into move-stack object
   data_move <- mt_as_move2(dat_final, coords = c("location.long", "location.lat"),
