@@ -255,9 +255,12 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
   
   names(dat_final) <- make.names(names(dat_final),allow_=FALSE)
   
+  ### Drop NA columns
+  dat_final_output <-  dat_final_output |> drop_na(Start_date)
+  
   write.csv(dat_final_output, file= paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
                                        paste("Parturition_output",window,".csv")))
-  #write.csv(dat_output,"Parturition_output2510.csv")
+  #write.csv(dat_final_output,"Parturition_output2510.csv")
   
   ###Converting the data.frame output into move-stack object
   data_move <- mt_as_move2(dat_final, coords = c("location.long", "location.lat"),

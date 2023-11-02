@@ -1,5 +1,5 @@
 library(jsonlite)
-library(move)
+library(move2)
 
 source("logger.R")
 source("RFunction.R")
