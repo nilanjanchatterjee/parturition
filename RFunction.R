@@ -109,7 +109,6 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
       data_temp$crun <- abs(data_temp$run_positive - lag(data_temp$run_positive))
       data_temp$crun[nrow(data_temp)] <-data_temp$run_positive[nrow(data_temp)-1]
       
-      dat_updt[[i]]<- data_temp ### append data for multiple individuals
       
       
       nrun<- ifelse(is.na(tabulate(data_temp$run_positive)[cutoff+1]),1,
@@ -130,11 +129,15 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         #   logger.info("There is no standard variable for animal ID in your data set, therefore trackId is used.")
         #   dat_output[j,2] <- unique(data_temp$trackId)
         # }
-        nrun_ind <- which(data_temp$crun >= cutoff)
+        nrun_ind <- which(data_temp$crun >= cutoff-1)
         ### Added the extra value as the rolling mean will show a earlier time compard to 
         ### the actual parturition time
         index.start <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j]-data_temp$run_positive[nrun_ind[j]-1])
         index.end   <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j])
+        
+        ### Include a column for locations that satisfy the clustering scheme
+        data_temp$segid <- NA
+        if(!is.na(index.start)){data_temp$segid[index.start:index.end] <-  1}
         
         dat_output[j,3] <- ifelse(length(nrun_ind)==0,NA,data_temp$run_positive[nrun_ind[j]-1])
         dat_output[j,4] <- mean(data_temp$rollm, na.rm=T)
@@ -149,6 +152,8 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
           dat_output[j, 8:9]<-NA
         }
       }
+      
+      dat_updt[[i]]<- data_temp ### append data for multiple individuals
       
       dat_fin_output[[i]] <- dat_output
       
@@ -194,7 +199,6 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         data_temp$crun <- abs(data_temp$run_positive - lag(data_temp$run_positive))
         data_temp$crun[nrow(data_temp)] <-data_temp$run_positive[nrow(data_temp)-1]
         
-        dat_updt[[i]]<- data_temp ### append data for multiple individuals
         
         nrun<- ifelse(is.na(tabulate(data_temp$run_positive)[cutoff+1]),1,
                       tabulate(data_temp$run_positive)[cutoff+1])
@@ -220,6 +224,10 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
           index.start <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j]-data_temp$run_positive[nrun_ind[j]-1])
           index.end   <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j])
           
+          ### Include a column for locations that satisfy the clustering scheme
+          data_temp$segid <- NA
+          if(!is.na(index.start)){data_temp$segid[index.start:index.end] <-  1}
+          
           dat_output[j,3] <- ifelse(length(nrun_ind)==0,NA,data_temp$run_positive[nrun_ind[j]-1])
           dat_output[j,4] <- mean(data_temp$rollm, na.rm=T)
           dat_output[j,5] <- as.POSIXct(ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.start]), origin = "1970-01-01")
@@ -233,6 +241,8 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
             dat_output[j, 8:9]<-NA
           }
         }
+        
+        dat_updt[[i]]<- data_temp ### append data for multiple individuals
         
         dat_fin_output[[i]] <- dat_output
         
@@ -249,6 +259,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
   dev.off()
     
   dat_final <-do.call(rbind,dat_updt)
+  dat_final$segid[is.na(dat_final$segid)]<-0
   dat_final_output <- do.call(rbind, dat_fin_output)
   names(dat_final_output) <-c("Track_id", "Individual_id", "Number_of_max_reloc","Threshold_speed(m/h)",
                               "Start_date", "End_date", "Numbers_of\ndetected_events","location_long", "location_lat")
