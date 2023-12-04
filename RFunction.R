@@ -136,8 +136,8 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         index.end   <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j])
         
         ### Include a column for locations that satisfy the clustering scheme
-        data_temp$segid <- NA
-        if(!is.na(index.start)){data_temp$segid[index.start:index.end] <-  1}
+        data_temp$case <- NA
+        if(!is.na(index.start)){data_temp$case[index.start:index.end] <-  1}
         
         dat_output[j,3] <- ifelse(length(nrun_ind)==0,NA,data_temp$run_positive[nrun_ind[j]-1])
         dat_output[j,4] <- mean(data_temp$rollm, na.rm=T)
@@ -225,8 +225,8 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
           index.end   <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j])
           
           ### Include a column for locations that satisfy the clustering scheme
-          data_temp$segid <- NA
-          if(!is.na(index.start)){data_temp$segid[index.start:index.end] <-  1}
+          data_temp$case <- NA
+          if(!is.na(index.start)){data_temp$case[index.start:index.end] <-  1}
           
           dat_output[j,3] <- ifelse(length(nrun_ind)==0,NA,data_temp$run_positive[nrun_ind[j]-1])
           dat_output[j,4] <- mean(data_temp$rollm, na.rm=T)
