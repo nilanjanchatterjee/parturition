@@ -259,7 +259,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
   dev.off()
     
   dat_final <-do.call(rbind,dat_updt)
-  dat_final$segid[is.na(dat_final$segid)]<-0
+  dat_final$case[is.na(dat_final$case)]<-0
   dat_final_output <- do.call(rbind, dat_fin_output)
   names(dat_final_output) <-c("Track_id", "Individual_id", "Number_of_max_reloc","Threshold_speed(m/h)",
                               "Start_date", "End_date", "Numbers_of\ndetected_events","location_long", "location_lat")
