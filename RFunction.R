@@ -108,7 +108,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
       cutoff<- floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
       data_temp$crun <- abs(data_temp$run_positive - lag(data_temp$run_positive))
       data_temp$crun[nrow(data_temp)] <-data_temp$run_positive[nrow(data_temp)-1]
-      
+      data_temp$case <- NA
       
       
       nrun<- ifelse(is.na(tabulate(data_temp$run_positive)[cutoff+1]),1,
@@ -136,7 +136,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         index.end   <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j])
         
         ### Include a column for locations that satisfy the clustering scheme
-        data_temp$case <- NA
+        
         if(!is.na(index.start)){data_temp$case[index.start:index.end] <-  1}
         
         dat_output[j,3] <- ifelse(length(nrun_ind)==0,NA,data_temp$run_positive[nrun_ind[j]-1])
@@ -198,7 +198,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
         cutoff<- floor(window/median(as.numeric(data_temp$timediff), na.rm=T))
         data_temp$crun <- abs(data_temp$run_positive - lag(data_temp$run_positive))
         data_temp$crun[nrow(data_temp)] <-data_temp$run_positive[nrow(data_temp)-1]
-        
+        data_temp$case <- NA
         
         nrun<- ifelse(is.na(tabulate(data_temp$run_positive)[cutoff+1]),1,
                       tabulate(data_temp$run_positive)[cutoff+1])
@@ -225,7 +225,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
           index.end   <- ifelse(length(nrun_ind)==0,NA,nrun_ind[j])
           
           ### Include a column for locations that satisfy the clustering scheme
-          data_temp$case <- NA
+          
           if(!is.na(index.start)){data_temp$case[index.start:index.end] <-  1}
           
           dat_output[j,3] <- ifelse(length(nrun_ind)==0,NA,data_temp$run_positive[nrun_ind[j]-1])
