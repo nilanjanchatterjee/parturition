@@ -1,5 +1,9 @@
 # Changelog SDK
 
+## 2023-12 `v3.0.5`
+
+- update of input files for testing apps. Files now include `move2_loc` and `telemetry.list` I/O types, and projected and not projected data. All details included in the README.txt in the data/raw folder.
+
 ## 2023-11 `v3.0.4`
 
 - Upgrade `R` framework to `4.3.2`
