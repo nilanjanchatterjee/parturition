@@ -16,17 +16,12 @@ USER moveapps:staff
 
 WORKDIR /home/moveapps/co-pilot-r
 
-# renv
-ENV RENV_VERSION 0.16.0
-RUN R -e "install.packages('remotes', repos = c(CRAN = 'https://cloud.r-project.org'))"
-RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
-
 # copy the SDK
 COPY --chown=moveapps:staff src/ ./src/
 COPY --chown=moveapps:staff data/ ./data/
 COPY --chown=moveapps:staff sdk.R RFunction.R .env app-configuration.json start-process.sh ./
 
-# restore the current snapshot
+# restore the current snapshot via renv
 COPY --chown=moveapps:staff renv.lock .Rprofile ./
 COPY --chown=moveapps:staff renv/activate.R renv/settings.dcf ./renv/
 RUN R -e 'renv::restore()'
