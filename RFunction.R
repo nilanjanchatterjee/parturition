@@ -30,7 +30,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
     lines(dat$timestamp, dat$speed,col= "grey30", main= paste(uid[i], yr, sep = "_"))
     lines(dat$timestamp, dat$rollm, col ="brown4", lwd=1.5, main= paste(uid[i], yr, sep = "_"))
     #legend('topright', legend = rp, bty = 'n')
-    abline(h=mean(dat$speed, na.rm=T), lty=3, lwd=2, col= "coral")
+    abline(h= ifelse(is.null(threshold), mean(dat$speed, na.rm=T), threshold),  lty=3, lwd=2, col= "coral")
     for (i in 1:nrow(dat_outp))
     {abline(v= dat_outp$V5, lty=2, lwd=1.5, col= "green4")
       abline(v= dat_outp$V6, lty=4, lwd=1.5, col= "royalblue")
@@ -64,6 +64,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
       
     }
   }
+  
   #dat_output <-as.data.frame(uid) ## Save the different individuals 
   #plot.new()
   dat_updt <-list()
@@ -229,7 +230,7 @@ rFunction <-function(data, threshold=NULL, window=72, yaxs_limit=1000){
           if(!is.na(index.start)){data_temp$case[index.start:index.end] <-  1}
           
           dat_output[j,3] <- ifelse(length(nrun_ind)==0,NA,data_temp$run_positive[nrun_ind[j]-1])
-          dat_output[j,4] <- mean(data_temp$rollm, na.rm=T)
+          dat_output[j,4] <- threshold #mean(data_temp$rollm, na.rm=T)
           dat_output[j,5] <- as.POSIXct(ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.start]), origin = "1970-01-01")
           dat_output[j,6] <- as.POSIXct(ifelse(length(nrun_ind)==0,NA,data_temp$timestamp[index.end]), origin = "1970-01-01")
           dat_output[j,7] <- nrun
