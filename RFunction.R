@@ -8,14 +8,14 @@ library(geosphere)
 library(lubridate)
 
 ###  Function for plotting the individual speed
-plot_speed <- function(dat, dat_outp, yul, uid, threshold) {
+plot_speed <- function(dat, dat_outp, yul, track_id, threshold) {
   yr <- year(dat$timestamp[1])
   plot(dat$timestamp, dat$speed,
-    main = paste(uid, yr, sep = "_"), cex = 0.4, ylim = c(0, yul),
+    main = paste(track_id, yr, sep = "_"), cex = 0.4, ylim = c(0, yul),
     ylab = expression(paste("Distance /", Delta, "t")), xlab = "Time", col = "grey40"
   )
-  lines(dat$timestamp, dat$speed, col = "grey30", main = paste(uid, yr, sep = "_"))
-  lines(dat$timestamp, dat$rollm, col = "brown4", lwd = 1.5, main = paste(uid, yr, sep = "_"))
+  lines(dat$timestamp, dat$speed, col = "grey30", main = paste(track_id, yr, sep = "_"))
+  lines(dat$timestamp, dat$rollm, col = "brown4", lwd = 1.5, main = paste(track_id, yr, sep = "_"))
   # legend('topright', legend = rp, bty = 'n')
   abline(h = ifelse(is.null(threshold), mean(dat$speed, na.rm = T), threshold), lty = 3, lwd = 2, col = "coral")
   for (i in 1:nrow(dat_outp))
@@ -26,14 +26,14 @@ plot_speed <- function(dat, dat_outp, yul, uid, threshold) {
 }
 
 ###  Function for plotting the individual location
-plot_loc <- function(dat, dat_outp, uid) {
+plot_loc <- function(dat, dat_outp, track_id) {
   yr <- year(dat$timestamp[1])
   plot(dat$location_long, dat$location_lat,
-    main = paste(uid, yr, sep = "_"),
+    main = paste(track_id, yr, sep = "_"),
     xlab = "Longitude", ylab = "Latitude", cex = 0.4
   )
   lines(dat$location_long, dat$location_lat,
-    main = paste(uid, yr, sep = "_"),
+    main = paste(track_id, yr, sep = "_"),
     xlab = "Longitude", ylab = "Latitude"
   )
   for (i in 1:nrow(dat_outp))
@@ -44,10 +44,10 @@ plot_loc <- function(dat, dat_outp, uid) {
 }
 
 ### plot the net-squared displacement along with the identified parturition time
-plot_nsd <- function(dat, dat_outp, uid) {
+plot_nsd <- function(dat, dat_outp, track_id) {
   yr <- year(dat$timestamp[1])
   plot(dat$timestamp, dat$nsd,
-    type = "l", main = paste(uid, yr, sep = "_"),
+    type = "l", main = paste(track_id, yr, sep = "_"),
     ylab = "Net squared displacement (km)", xlab = "Time"
   )
   lines(dat$timestamp, dat$rollnsd, col = "brown4", lwd = 1)
@@ -60,19 +60,18 @@ plot_nsd <- function(dat, dat_outp, uid) {
 
 rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
   
-  data <- data |>
+  original_track_id_column <- mt_track_id_column(data)
+  track_data <- mt_track_data(data)
+  
+  data_df <- data |>
     mutate(
       location_long = sf::st_coordinates(data)[, 1],
       location_lat = sf::st_coordinates(data)[, 2],
       trackID = mt_track_id(data),
-      distance = mt_distance(data)
+      distance = as.numeric(mt_distance(data))
     )
 
-  class(data$distance) <- "numeric"
-  data_df <- as.data.frame(data)
-  names(data_df) <- gsub("[.]", "_", names(data_df))
-  uids <- unique(data$trackID)
-
+  track_ids <- unique(data_df$trackID)
 
   dat_updt <- list()
   dat_fin_output <- list()
@@ -86,10 +85,23 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
   par(mfrow = c(4, 3), mar = c(4, 4, 3, 1))
 
 
-  for (i in 1:length(uids)) {
-    uid <- uids[1]
-    data_temp1 <- subset(data_df, data_df$trackID == uid)
-    tint <- as.numeric(as.POSIXct(max(data_temp1$timestamp)) - as.POSIXct(min(data_temp1$timestamp)), units = "hours")
+  for (i in 1:length(track_ids)) {
+    track_id <- track_ids[i]
+    animal_id <- track_data |>
+      filter(
+        !!rlang::sym(original_track_id_column) == track_id
+      ) |>
+      dplyr::select(individual_local_identifier) |>
+      first()
+      
+      
+    data_temp1 <- data_df |>
+      filter(trackID == track_id)
+      
+    tint <- as.numeric(
+      as.POSIXct(max(data_temp1$timestamp)) - as.POSIXct(min(data_temp1$timestamp)),
+      units = "hours")
+    
     if (dim(data_temp1)[1] > 10 & tint > window) { ## To filter individuals with very few relocations
 
       data_temp <- data_temp1 %>%
@@ -98,8 +110,8 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
           # the shift is used to move the first NA in time difference to the last position so that
           # it matches with the distance column for actual speed calculation
           timediff = magic::shift(
-            as.numeric(as.POSIXct(data_temp1$timestamp) - as.POSIXct(lag(data_temp1$timestamp)), units = "hours"),
-            -1)
+            as.numeric(as.POSIXct(data_temp1$timestamp) - as.POSIXct(lag(data_temp1$timestamp)),
+                       units = "hours"), -1)
         ) |>
         filter(
           timediff != 0
@@ -140,8 +152,9 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
       dat_output <- data.frame()
 
       for (j in 1:nrun) {
-        dat_output[j, 1] <- uid
-        dat_output[i, 2] <- unique(data_temp$trackID)
+        dat_output[j, 1] <- track_id
+        
+        dat_output[i, 2] <- animal_id
 
         nrun_ind <- which(data_temp$crun >= cutoff - 1)
         
@@ -175,9 +188,9 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
 
       # plot the  figures
       plot_speed(data_temp, dat_output, yul = yaxs_limit,
-                 uid = uid, threshold = working_threshold)
-      plot_loc(data_temp, dat_output, uid = uid)
-      plot_nsd(data_temp, dat_output, uid = uid)
+                 track_id = track_id, threshold = working_threshold)
+      plot_loc(data_temp, dat_output, track_id = track_id)
+      plot_nsd(data_temp, dat_output, track_id = track_id)
     }
   }
   dev.off()
@@ -194,7 +207,7 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
 
   ### Drop NA columns
   dat_final_output <- dat_final_output |>
-    drop_na(Start_date)
+    drop_na(Start_date) 
 
   write.csv(dat_final_output, file = paste0(
     app_artifacts_base_path,
@@ -202,15 +215,14 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
   ))
 
   ### Converting the data.frame output into move2 object
-  original_track_id_column <- attr(data, "track_id")
-  track_data <- mt_track_data(data)
   dat_final <- left_join(dat_final,
                          track_data,
                          join_by(trackID == !!original_track_id_column)) |>
-    dplyr::select(-one_of(!!original_track_id_column)) |>
+    dplyr::select(!one_of(!!original_track_id_column)) |>
     rename(
       !!original_track_id_column := trackID
     )
+  
     
   
   data_move <- mt_as_move2(dat_final,

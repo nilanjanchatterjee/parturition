@@ -1,6 +1,6 @@
 source(here("tests/testthat/helper.R"))
 
-test_data <- test_data("input3_move2.rds")
+test_data <- test_data("input3_move2loc_LatLon.rds")
 
 
 test_that("function executes with user-passed threshold", {
