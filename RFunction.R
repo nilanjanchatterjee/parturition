@@ -7,6 +7,9 @@ library(magic)
 library(geosphere)
 library(lubridate)
 
+# TODO: 
+# - deal with test data having periods in column headers
+
 ###  Function for plotting the individual speed
 plot_speed <- function(dat, dat_outp, yul, track_id, threshold) {
   yr <- year(dat$timestamp[1])
