@@ -8,14 +8,14 @@ library(geosphere)
 library(lubridate)
 
 ###  Function for plotting the individual speed
-plot_speed <- function(dat, dat_outp, yul = yaxs_limit) {
+plot_speed <- function(dat, dat_outp, yul, uid, threshold) {
   yr <- year(dat$timestamp[1])
   plot(dat$timestamp, dat$speed,
-    main = paste(uid[i], yr, sep = "_"), cex = 0.4, ylim = c(0, yul),
+    main = paste(uid, yr, sep = "_"), cex = 0.4, ylim = c(0, yul),
     ylab = expression(paste("Distance /", Delta, "t")), xlab = "Time", col = "grey40"
   )
-  lines(dat$timestamp, dat$speed, col = "grey30", main = paste(uid[i], yr, sep = "_"))
-  lines(dat$timestamp, dat$rollm, col = "brown4", lwd = 1.5, main = paste(uid[i], yr, sep = "_"))
+  lines(dat$timestamp, dat$speed, col = "grey30", main = paste(uid, yr, sep = "_"))
+  lines(dat$timestamp, dat$rollm, col = "brown4", lwd = 1.5, main = paste(uid, yr, sep = "_"))
   # legend('topright', legend = rp, bty = 'n')
   abline(h = ifelse(is.null(threshold), mean(dat$speed, na.rm = T), threshold), lty = 3, lwd = 2, col = "coral")
   for (i in 1:nrow(dat_outp))
@@ -26,14 +26,14 @@ plot_speed <- function(dat, dat_outp, yul = yaxs_limit) {
 }
 
 ###  Function for plotting the individual location
-plot_loc <- function(dat, dat_outp) {
+plot_loc <- function(dat, dat_outp, uid) {
   yr <- year(dat$timestamp[1])
   plot(dat$location_long, dat$location_lat,
-    main = paste(uid[i], yr, sep = "_"),
+    main = paste(uid, yr, sep = "_"),
     xlab = "Longitude", ylab = "Latitude", cex = 0.4
   )
   lines(dat$location_long, dat$location_lat,
-    main = paste(uid[i], yr, sep = "_"),
+    main = paste(uid, yr, sep = "_"),
     xlab = "Longitude", ylab = "Latitude"
   )
   for (i in 1:nrow(dat_outp))
@@ -44,10 +44,10 @@ plot_loc <- function(dat, dat_outp) {
 }
 
 ### plot the net-squared displacement along with the identified parturition time
-plot_nsd <- function(dat, dat_outp) {
+plot_nsd <- function(dat, dat_outp, uid) {
   yr <- year(dat$timestamp[1])
   plot(dat$timestamp, dat$nsd,
-    type = "l", main = paste(uid[i], yr, sep = "_"),
+    type = "l", main = paste(uid, yr, sep = "_"),
     ylab = "Net squared displacement (km)", xlab = "Time"
   )
   lines(dat$timestamp, dat$rollnsd, col = "brown4", lwd = 1)
@@ -68,60 +68,58 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
       distance = mt_distance(data)
     )
 
-  # data$distance <- mt_distance(data, units="m") # like this units will always be in meters, please adjust to the units you see most fit
   class(data$distance) <- "numeric"
   data_df <- as.data.frame(data)
   names(data_df) <- gsub("[.]", "_", names(data_df))
-  # uid <-unique(data_df$individual_local_identifier)
-  uid <- unique(data$trackID)
+  uids <- unique(data$trackID)
 
 
-  # dat_output <-as.data.frame(uid) ## Save the different individuals
-  # plot.new()
   dat_updt <- list()
   dat_fin_output <- list()
 
-  # pdf("Parturition_velney.pdf", width = 8, height = 12)
+  app_artifacts_base_path <- Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/")
   pdf(paste0(
-    Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
+    app_artifacts_base_path,
     paste("Parturition_vel", window, ".pdf")
   ), width = 8, height = 12)
   
   par(mfrow = c(4, 3), mar = c(4, 4, 3, 1))
 
 
-  for (i in 1:length(uid)) {
-    data_temp1 <- subset(data_df, data_df$trackID == uid[i])
+  for (i in 1:length(uids)) {
+    uid <- uids[1]
+    data_temp1 <- subset(data_df, data_df$trackID == uid)
     tint <- as.numeric(as.POSIXct(max(data_temp1$timestamp)) - as.POSIXct(min(data_temp1$timestamp)), units = "hours")
     if (dim(data_temp1)[1] > 10 & tint > window) { ## To filter individuals with very few relocations
 
-      ## calculates the difference between consecutive timestamp
       data_temp <- data_temp1 %>%
-        mutate(timediff = as.numeric(as.POSIXct(data_temp1$timestamp) - as.POSIXct(lag(data_temp1$timestamp)), units = "hours"))
-
-      # the shift is used to move the first NA in time difference to the last position so that
-      # it matches with the distance column for actual speed calculation
-      data_temp$timediff <- magic::shift(data_temp$timediff, -1)
-      data_temp <- subset(data_temp, timediff != 0)
-
-      # Calculating the nsd using geosphere package to support the identified parturition
-      data_temp$nsd <- distVincentyEllipsoid(
-        cbind(data_temp$location_long, data_temp$location_lat),
-        cbind(data_temp$location_long[1], data_temp$location_lat[1])
-      ) / 1000
-
-      ## moving average to be calculated over the window time
-      data_temp <- data_temp %>%
-        mutate(speed = distance / as.numeric(timediff)) %>%
         mutate(
+          ## calculates the difference between consecutive timestamps
+          # the shift is used to move the first NA in time difference to the last position so that
+          # it matches with the distance column for actual speed calculation
+          timediff = magic::shift(
+            as.numeric(as.POSIXct(data_temp1$timestamp) - as.POSIXct(lag(data_temp1$timestamp)), units = "hours"),
+            -1)
+        ) |>
+        filter(
+          timediff != 0
+        ) |>
+        mutate(
+          # Calculating the nsd using geosphere package to support the identified parturition
+          nsd = distVincentyEllipsoid(
+            cbind(location_long, location_lat),
+            cbind(first(location_long), first(location_lat))
+          ) / 1000,
+      
+          # moving average to be calculated over the window time
+          speed = distance / as.numeric(timediff),
           rollm = rollapply(speed, window / median(as.numeric(timediff), na.rm = T), mean, na.rm = T, fill = NA),
           rollnsd = rollapply(nsd, window / median(as.numeric(timediff), na.rm = T), mean, na.rm = T, fill = NA)
         )
 
-
+   
       # user-passed threshold or default to mean rollm
       working_threshold <- if (!is.null(threshold)) threshold else mean(data_temp$rollm, na.rm = T)
-
       
       ### Input condition for the clustering
       data_temp$cnd <- ifelse((data_temp$speed) < working_threshold & !is.na(data_temp$speed), 1, 0)
@@ -142,22 +140,12 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
       dat_output <- data.frame()
 
       for (j in 1:nrun) {
-        dat_output[j, 1] <- uid[i]
-        dat_output[i, 2] <- unique(data_temp$trackID) # ERROR
-        # if (any(names(data_temp)=="local_identifier")) #need to account for the fact that not all data sets have the variable local_identifier or individual_local_identifier
-        # {
-        #   dat_output[j,2] <- unique(data_temp$local_identifier)
-        # } else if (any(names(data_temp)=="individual_local_identifier"))
-        # {
-        #   dat_output[j,2] <- unique(data_temp$individual_local_identifier)
-        # } else
-        # {
-        #   logger.info("There is no standard variable for animal ID in your data set, therefore trackId is used.")
-        #   dat_output[j,2] <- unique(data_temp$trackId)
-        # }
-        
+        dat_output[j, 1] <- uid
+        dat_output[i, 2] <- unique(data_temp$trackID)
+
         nrun_ind <- which(data_temp$crun >= cutoff - 1)
-        ### Added the extra value as the rolling mean will show a earlier time compard to
+        
+        ### Added the extra value as the rolling mean will show a earlier time compared to
         ### the actual parturition time
         index.start <- ifelse(length(nrun_ind) == 0, NA, nrun_ind[j] - data_temp$run_positive[nrun_ind[j] - 1])
         index.end <- ifelse(length(nrun_ind) == 0, NA, nrun_ind[j])
@@ -186,9 +174,10 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
       dat_fin_output[[i]] <- dat_output
 
       # plot the  figures
-      plot_speed(data_temp, dat_output)
-      plot_loc(data_temp, dat_output)
-      plot_nsd(data_temp, dat_output)
+      plot_speed(data_temp, dat_output, yul = yaxs_limit,
+                 uid = uid, threshold = working_threshold)
+      plot_loc(data_temp, dat_output, uid = uid)
+      plot_nsd(data_temp, dat_output, uid = uid)
     }
   }
   dev.off()
@@ -204,23 +193,25 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
   names(dat_final) <- make.names(names(dat_final), allow_ = FALSE)
 
   ### Drop NA columns
-  dat_final_output <- dat_final_output |> drop_na(Start_date)
+  dat_final_output <- dat_final_output |>
+    drop_na(Start_date)
 
   write.csv(dat_final_output, file = paste0(
-    Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),
+    app_artifacts_base_path,
     paste("Parturition_output", window, ".csv")
   ))
-  # write.csv(dat_final_output,"Parturition_output2510.csv")
 
-  ### Converting the data.frame output into move-stack object
+  ### Converting the data.frame output into move2 object
   original_track_id_column <- attr(data, "track_id")
   track_data <- mt_track_data(data)
   dat_final <- left_join(dat_final,
                          track_data,
-                         join_by(trackID == track_id_column)) |>
+                         join_by(trackID == !!original_track_id_column)) |>
+    dplyr::select(-one_of(!!original_track_id_column)) |>
     rename(
       !!original_track_id_column := trackID
     )
+    
   
   data_move <- mt_as_move2(dat_final,
     coords = c("location.long", "location.lat"),
