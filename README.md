@@ -29,15 +29,15 @@ The results are provided as a set of plots per track (`Parturition_vel.pdf`) and
 2. The spatial locations of the individual with the identified parturition location marked with a blue cross
 3. The net-squared displacement plot for the individual with the identified parturition interval marked with blue dotted lines 
  
-`Parturition_output.csv`: csv containing the following attributes:
-`Track_id`: The ID for the track segment
-`Individual_id`: The animal ID
-`Number_of_max_reloc`: The number of relocations in the parturition interval
-`Threshold_speed(m/h)`: The threshold speed used
-`Start_date`: The timestamp of the start of the parturition event (yyyy-MM-dd HH:mm:ss UTC)
-`End_date`: The timestamp of the end of the parturition event (yyyy-MM-dd HH:mm:ss UTC)
-`Numbers_of_detected_events`: the total number of events in the track that satisfy the threshold criteria
-`location_long`: The longitude of the individual's location at the start of the parturition interval (decimal degrees, WGS84)
+`Parturition_output.csv`: csv containing the following attributes:   
+`Track_id`: The ID for the track segment   
+`Individual_id`: The animal ID   
+`Number_of_max_reloc`: The number of relocations in the parturition interval   
+`Threshold_speed(m/h)`: The threshold speed used   
+`Start_date`: The timestamp of the start of the parturition event (yyyy-MM-dd HH:mm:ss UTC)   
+`End_date`: The timestamp of the end of the parturition event (yyyy-MM-dd HH:mm:ss UTC)   
+`Numbers_of_detected_events`: the total number of events in the track that satisfy the threshold criteria  
+`location_long`: The longitude of the individual's location at the start of the parturition interval (decimal degrees, WGS84)   
 `location_lat`: The latitude of the individual's location at the start of the parturition interval (decimal degrees, WGS84)
 
 ## Settings
