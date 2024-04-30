@@ -234,7 +234,7 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
 
   # drop NA columns
   dat_final_output <- dat_final_output |>
-    drop_na(Start_date)
+    drop_na(start_date)
 
   # write app artefact
   write.csv(dat_final_output, file = paste0(
