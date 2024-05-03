@@ -1,1 +1,4 @@
-{}
+{
+  "threshold": 100,
+  "window": 96
+}
