@@ -80,12 +80,9 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
   dat_updt <- list()
   dat_fin_output <- list()
 
-  app_artifacts_base_path <- Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/")
+  #app_artifacts_base_path <- Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/")
 
-  pdf(paste0(
-    app_artifacts_base_path,
-    paste("Parturition_vel", window, ".pdf")
-  ), width = 8, height = 12)
+  pdf(appArtifactPath(paste0("Parturition_vel", window, ".pdf")), width = 8, height = 12)
 
   par(mfrow = c(4, 3), mar = c(4, 4, 3, 1))
 
@@ -237,10 +234,7 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
     drop_na(start_date)
 
   # write app artefact
-  write.csv(dat_final_output, file = paste0(
-    app_artifacts_base_path,
-    paste("Parturition_output", window, ".csv")
-  ))
+  write.csv(dat_final_output, appArtifactPath(paste0("Parturition_output", window, ".csv")))
 
   # convert the data.frame output into move2 object
   dat_final <- left_join(
