@@ -84,7 +84,7 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
 
   pdf(paste0(
     app_artifacts_base_path,
-    paste("Parturition_vel", window, ".pdf")
+    paste("Parturition_vel", window, "h.pdf", sep = "")
   ), width = 8, height = 12)
 
   par(mfrow = c(4, 3), mar = c(4, 4, 3, 1))
@@ -227,19 +227,25 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
   dat_final$case[is.na(dat_final$case)] <- 0
   dat_final_output <- do.call(rbind, dat_fin_output)
   names(dat_final_output) <- c(
-    "track_id", "individual_id", "number_of_max_reloc",
+    "track_id", "individual_local_identifier", "number_max_reloc",
     "threshold_speed_meters_per_hour", "start_date", "end_date",
-    "num_detected_events", "location_long", "location_lat"
+    "number_detected_events", "location_long", "location_lat"
   )
 
   # drop NA columns
   dat_final_output <- dat_final_output |>
     drop_na(start_date)
+  
+  # format dates consistently
+  dat_final_output$start_date <- format(as.POSIXct(dat_final_output$start_date, tz="UTC"), 
+                                        format="%Y-%m-%d %H:%M:%S")
+  dat_final_output$end_date <- format(as.POSIXct(dat_final_output$end_date, tz="UTC"), 
+                                      format="%Y-%m-%d %H:%M:%S")
 
   # write app artefact
   write.csv(dat_final_output, file = paste0(
     app_artifacts_base_path,
-    paste("Parturition_output", window, ".csv")
+    paste("Parturition_output", window, "h.csv", sep = "")
   ))
 
   # convert the data.frame output into move2 object
