@@ -31,6 +31,11 @@ The results are provided as a set of plots per track (`Parturition_vel.pdf`) and
 
 **Choosing settings:** If your results indicate more or fewer calving events than expected, revisit the settings. For example, if too many parturition events are identified, you can either increase the time window or decrease the speed threshold. If you are unsure what speed setting is reasonable, first try using the average speed per track (the default `threshold speed` setting).
 
+**Comparing results:** Often, exact or approximate calving dates for some animals in a dataset are known from aerial surveys, VITs, collar cameras, of other sources. To assess confidence in the automated analysis and settings used, it can be helpful to quickly compare the results with ground-truthed calving events where available. To compare the results of this app with calving dates from other sources, you can upload a file containing these dates, and they will be included in the output artefacts: appended to `Parturition_output.csv` as `known_birthdate`, and displayed as grey vertical lines on the distance/time_interval and net-squared displacement plots in `Parturition_vel.pdf`. The file of known calving dates must be in .csv format and contain two columns:  
+* `track_id`: An identifier for the track that exactly matches the track ID in your workflow, as shown in the output.csv or listed as `track_names` in the cargo agent. This is usually the animalID.year.  
+* `birthdate`: The known or estimated birth date from another source, in format `yyyy-mm-dd`.  
+Additional columns, as well as `track_id` values that do not match tracks in the dataset, can be included in the file but will be ignored. The values in this file are not used in the analysis and will not affect your results.
+
 ## Input data
 
 *move/moveStack* in Movebank format and optional threshold speed and window length
@@ -62,14 +67,16 @@ The results are provided as a set of plots per track (`Parturition_vel.pdf`) and
    
 **Time window used to calculate change in movement (`window`):** A time window for calculating the average movement speed, specified by user. Defaults to **72 hours**.
 
+**BETA: Known calving events (`events_file`):** Option to upload a local file with known calving events to include in outputs. See file requirements above.
+
 ### Null or error handling
 
 **Common errors**
 
-ERROR: `App failed because the window is less than median difference in time between locations... Please increase your window size.`.  
+ERROR: `App failed because the window is less than median difference in time between locations... Please increase your window size.`  
 CAUSE: It is not possible to calculate an average movement speed, or assess the movement behavior of the animal, over a period in which there are no location estimates.  
 SOLUTION: Increase "Time window used to calculate change in movement" so that the time window is longer than the median fix rate for the track in the dataset with the lowest fix rate.
 
-ERROR: `attempt to set an attribute on NULL`.  
+ERROR: `attempt to set an attribute on NULL`  
 CAUSE: There are no input data, or for one or more tracks, there is insufficient data to run the analysis.  
 SOLUTION: Check that the output of the previous app is as expected. Otherwise, remove any very short track segments (see Data Preparation above).

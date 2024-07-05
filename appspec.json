@@ -14,8 +14,13 @@
       "defaultValue": 72,
       "type": "DOUBLE"
     }
-    ],
-    
+  {
+      "id": "events_file",
+      "name": "Known calving events",
+      "description": "Optionally, upload a local file with known calving events to include in outputs. See the app README for the expected format.",
+      "type": "USER_FILE"    
+  }
+    ],     
   "dependencies": {
     "R": [
       {
