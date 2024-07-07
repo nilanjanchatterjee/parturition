@@ -31,7 +31,7 @@ The results are provided as a set of plots per track (`Parturition_vel.pdf`) and
 
 **Choosing settings:** If your results indicate more or fewer calving events than expected, revisit the settings. For example, if too many parturition events are identified, you can either increase the time window or decrease the speed threshold. If you are unsure what speed setting is reasonable, first try using the average speed per track (the default `threshold speed` setting).
 
-**Comparing results:** Often, exact or approximate calving dates for some animals in a dataset are known from aerial surveys, VITs, collar cameras, of other sources. To assess confidence in the automated analysis and settings used, it can be helpful to quickly compare the results with ground-truthed calving events where available. To compare the results of this app with calving dates from other sources, you can upload a file containing these dates, and they will be included in the output artefacts: appended to `Parturition_output.csv` as `known_birthdate`, and displayed as grey vertical lines on the distance/time_interval and net-squared displacement plots in `Parturition_vel.pdf`. The file of known calving dates must be in .csv format and contain two columns:  
+**Comparing results:** Often, exact or approximate calving dates for some animals in a dataset are known from aerial surveys, VITs, collar cameras, or other sources. To assess confidence in the automated analysis and settings used, it can be helpful to quickly compare the results with ground-truthed calving events where available. To compare the results of this app with calving dates from other sources, you can upload a file containing these dates, and they will be included in the output artefacts: appended to `Parturition_output.csv` as `known_birthdate`, and displayed as grey vertical lines on the distance/time_interval and net-squared displacement plots in `Parturition_vel.pdf`. The file of known calving dates must be in .csv format and contain two columns:  
 * `track_id`: An identifier for the track that exactly matches the track ID in your workflow, as shown in the output.csv or listed as `track_names` in the cargo agent. This is usually the animalID.year.  
 * `birthdate`: The known or estimated birth date from another source, in format `yyyy-mm-dd`.  
 Additional columns, as well as `track_id` values that do not match tracks in the dataset, can be included in the file but will be ignored. The values in this file are not used in the analysis and will not affect your results.
@@ -51,15 +51,17 @@ Additional columns, as well as `track_id` values that do not match tracks in the
 3. The net-squared displacement plot for the individual with the identified parturition interval marked with blue dotted lines 
  
 `Parturition_output.csv`: csv containing the following attributes:   
-`Track_id`: The ID for the track segment   
-`Individual_id`: The animal ID   
-`Number_of_max_reloc`: The number of relocations in the parturition interval   
-`Threshold_speed(m/h)`: The threshold speed used   
-`Start_date`: The timestamp of the start of the parturition event (yyyy-MM-dd HH:mm:ss UTC)   
-`End_date`: The timestamp of the end of the parturition event (yyyy-MM-dd HH:mm:ss UTC)   
-`Numbers_of_detected_events`: the total number of events in the track that satisfy the threshold criteria  
+`track_id`: The ID for the track segment   
+`individual_local_identifier`: The animal ID   
+`number_max_reloc`: The number of relocations in the parturition interval   
+`threshold_speed_meters_per_hour`: The threshold speed used   
+`start_date`: The timestamp of the start of the parturition event (yyyy-MM-dd HH:mm:ss UTC)   
+`end_date`: The timestamp of the end of the parturition event (yyyy-MM-dd HH:mm:ss UTC)   
+`number_detected_events`: the total number of events in the track that satisfy the threshold criteria  
 `location_long`: The longitude of the individual's location at the start of the parturition interval (decimal degrees, WGS84)   
 `location_lat`: The latitude of the individual's location at the start of the parturition interval (decimal degrees, WGS84)
+`known_birthdate`: If a file of known calving dates is uploaded by the user, the date for each track will be added to the results file.
+
 
 ## Settings
 

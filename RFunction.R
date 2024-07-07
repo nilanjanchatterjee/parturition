@@ -220,7 +220,7 @@ rFunction <- function(data, threshold = NULL, window = 72, events_file = NULL, y
       }
 
       # Read the local known calving events file, if provided
-      known_calving_file <- getAuxiliaryFilePath("events_file") # returns NULL if no fallback
+      known_calving_file <- getAuxiliaryFilePath("events_file")
       if(!is.null(known_calving_file)){
       known_calving <- read.csv((getAuxiliaryFilePath("events_file")),
                                  header = T, colClasses="character",
