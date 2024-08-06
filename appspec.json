@@ -3,19 +3,24 @@
 	{
       "id": "threshold",
       "name": "Threshold speed",
-      "description": "Define the threshold speed (in m/h) within which an female restricts its movement while calving. Default is calculated using individual wise average",
+      "description": "Define the threshold speed (in m/h) within which a female restricts its movement while calving. By default, the average speed for each track is used.",
       "defaultValue": null,
       "type": "DOUBLE"
     },
 	{
       "id": "window",
       "name": "Time window used to calculate change in movement",
-      "description": "Provide the minimum time duration (in hours) that your animals need to be present at a cluster for including it in your results. Defaults to 72 (hours).",
+      "description": "Provide the minimum time duration (in hours) that your animals need to be present at a cluster for including it in your results. Defaults to 72. This window must exceed the fix rate.",
       "defaultValue": 72,
       "type": "DOUBLE"
     }
-    ],
-    
+  {
+      "id": "events_file",
+      "name": "Known calving events",
+      "description": "Optionally, upload a local file with known calving events to include in outputs. See the app README for the expected format.",
+      "type": "USER_FILE"    
+  }
+    ],     
   "dependencies": {
     "R": [
       {
@@ -70,7 +75,7 @@
   ],
   "funding": [
     {
-	"name": "NASA MoveApps Project"
+	"name": "NASA Ecological Forecasting Program Grant 80NSSC21K1182"
 	}
   ],
   "documentation" : {

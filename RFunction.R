@@ -7,7 +7,6 @@ library(magic)
 library(geosphere)
 library(lubridate)
 
-
 ### Function for plotting the individual speed
 plot_speed <- function(dat, dat_outp, yul, track_id, threshold) {
   yr <- year(dat$timestamp[1])
@@ -21,6 +20,13 @@ plot_speed <- function(dat, dat_outp, yul, track_id, threshold) {
   lines(dat$timestamp, dat$rollm, col = "brown4", lwd = 1.5, main = paste(track_id, yr, sep = "_"))
   abline(h = ifelse(is.null(threshold), mean(dat$speed, na.rm = T), threshold), lty = 3, lwd = 2, col = "coral")
 
+  # Show known calving event if provided by user
+  if(!is.null(dat_outp$known_birthdate)){  
+    for (i in 1:nrow(dat_outp)) {
+      abline(v = dat_outp$known_birthdate, lty = 1, lwd = 2, col = alpha("grey50", 0.5))
+    }}
+
+  # Show start and end of identified calving events  
   for (i in 1:nrow(dat_outp)) {
     abline(v = dat_outp$V5, lty = 2, lwd = 1.5, col = "green4")
     abline(v = dat_outp$V6, lty = 4, lwd = 1.5, col = "royalblue")
@@ -45,7 +51,7 @@ plot_loc <- function(dat, dat_outp, track_id) {
   }
 }
 
-### plot the net-squared displacement along with the identified parturition time
+### Function for plotting the net-squared displacement
 plot_nsd <- function(dat, dat_outp, track_id) {
   yr <- year(dat$timestamp[1])
 
@@ -55,14 +61,20 @@ plot_nsd <- function(dat, dat_outp, track_id) {
   )
   lines(dat$timestamp, dat$rollnsd, col = "brown4", lwd = 1)
 
+  # Show known calving event if provided by user
+  if(!is.null(dat_outp$known_birthdate)){  
+    for (i in 1:nrow(dat_outp)) {
+      abline(v = dat_outp$known_birthdate, lty = 1, lwd = 2, col = alpha("grey50", 0.5))
+    }}
+  
+  # Show start and end of identified calving events
   for (i in 1:nrow(dat_outp)) {
     abline(v = dat_outp$V5, lty = 2, lwd = 1.5, col = "green4")
     abline(v = dat_outp$V6, lty = 4, lwd = 1.5, col = "royalblue")
   }
 }
 
-
-rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
+rFunction <- function(data, threshold = NULL, window = 72, events_file = NULL, yaxs_limit = 1000) {
   original_track_id_column <- mt_track_id_column(data)
   track_attribute_data <- mt_track_data(data)
 
@@ -84,7 +96,7 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
 
   pdf(paste0(
     app_artifacts_base_path,
-    paste("Parturition_vel", window, ".pdf")
+    paste("Parturition_vel", window, "h.pdf", sep = "")
   ), width = 8, height = 12)
 
   par(mfrow = c(4, 3), mar = c(4, 4, 3, 1))
@@ -207,10 +219,25 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
         }
       }
 
+      # Read the local known calving events file, if provided
+      known_calving_file <- getAuxiliaryFilePath("events_file")
+      if(!is.null(known_calving_file)){
+      known_calving <- read.csv((getAuxiliaryFilePath("events_file")),
+                                 header = T, colClasses="character",
+                                 na.strings = c("NA","n/a","NaN",""))
+      known_calving$known_birthdate <- as.POSIXct(known_calving$birthdate, tz="UTC", 
+                                                  format="%Y-%m-%d", origin = "1970-01-01")
+      known_calving <- known_calving %>% select("track_id","known_birthdate")
+      
+      # Add known calving event to output if present
+      dat_output <- merge(dat_output, known_calving, by.x = 1, by.y = "track_id",
+                          all.x = TRUE, all.y = FALSE, sort = FALSE)
+      }
+      
       dat_updt[[i]] <- data_temp ### append data for multiple individuals
-
+      
       dat_fin_output[[i]] <- dat_output
-
+                  
       # plot the figures
       plot_speed(data_temp, dat_output,
         yul = yaxs_limit,
@@ -226,20 +253,35 @@ rFunction <- function(data, threshold = NULL, window = 72, yaxs_limit = 1000) {
   dat_final <- do.call(rbind, dat_updt)
   dat_final$case[is.na(dat_final$case)] <- 0
   dat_final_output <- do.call(rbind, dat_fin_output)
+  if(!is.null(known_calving_file)){
   names(dat_final_output) <- c(
-    "track_id", "individual_id", "number_of_max_reloc",
+    "track_id", "individual_local_identifier", "number_max_reloc",
     "threshold_speed_meters_per_hour", "start_date", "end_date",
-    "num_detected_events", "location_long", "location_lat"
+    "number_detected_events", "location_long", "location_lat",
+    "known_birthdate"
   )
-
+  } else {
+  names(dat_final_output) <- c(
+    "track_id", "individual_local_identifier", "number_max_reloc",
+    "threshold_speed_meters_per_hour", "start_date", "end_date",
+    "number_detected_events", "location_long", "location_lat"
+  )
+  }
+  
   # drop NA columns
   dat_final_output <- dat_final_output |>
     drop_na(start_date)
+  
+  # format dates consistently
+  dat_final_output$start_date <- format(as.POSIXct(dat_final_output$start_date, tz="UTC"), 
+                                        format="%Y-%m-%d %H:%M:%S")
+  dat_final_output$end_date <- format(as.POSIXct(dat_final_output$end_date, tz="UTC"), 
+                                      format="%Y-%m-%d %H:%M:%S")
 
   # write app artefact
   write.csv(dat_final_output, file = paste0(
     app_artifacts_base_path,
-    paste("Parturition_output", window, ".csv")
+    paste("Parturition_output", window, "h.csv", sep = "")
   ))
 
   # convert the data.frame output into move2 object
