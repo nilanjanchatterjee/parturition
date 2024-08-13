@@ -20,6 +20,7 @@ test_that("function executes with default threshold", {
 test_that("function returns nothing and errors with bad window", {
   actual <- rFunction(data = test_data)
   expect_null(actual)
+  expect_false(file.exists())
 })
 
 
@@ -36,4 +37,13 @@ test_that("function preserves input track id column", {
   actual_track_id_column <- attr(actual, "track_id")
   expected_track_id_column <- attr(test_data, "track_id")
   expect_equal(actual_track_id_column, expected_track_id_column)
+})
+
+
+test_data <- test_data("input_issue_20.rds")
+
+test_that("function doesn't duplicate columns in output", {
+  actual <- rFunction(data = test_data, threshold = 6, window = 756)
+  expect_contains(colnames(mt_track_data(actual)), c("individual_local_identifier"))
+  expect_contains(colnames(actual), c("trackID", "individual_local_identifier_year"))
 })

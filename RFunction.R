@@ -21,12 +21,13 @@ plot_speed <- function(dat, dat_outp, yul, track_id, threshold) {
   abline(h = ifelse(is.null(threshold), mean(dat$speed, na.rm = T), threshold), lty = 3, lwd = 2, col = "coral")
 
   # Show known calving event if provided by user
-  if(!is.null(dat_outp$known_birthdate)){  
+  if (!is.null(dat_outp$known_birthdate)) {
     for (i in 1:nrow(dat_outp)) {
       abline(v = dat_outp$known_birthdate, lty = 1, lwd = 2, col = alpha("grey50", 0.5))
-    }}
+    }
+  }
 
-  # Show start and end of identified calving events  
+  # Show start and end of identified calving events
   for (i in 1:nrow(dat_outp)) {
     abline(v = dat_outp$V5, lty = 2, lwd = 1.5, col = "green4")
     abline(v = dat_outp$V6, lty = 4, lwd = 1.5, col = "royalblue")
@@ -62,11 +63,12 @@ plot_nsd <- function(dat, dat_outp, track_id) {
   lines(dat$timestamp, dat$rollnsd, col = "brown4", lwd = 1)
 
   # Show known calving event if provided by user
-  if(!is.null(dat_outp$known_birthdate)){  
+  if (!is.null(dat_outp$known_birthdate)) {
     for (i in 1:nrow(dat_outp)) {
       abline(v = dat_outp$known_birthdate, lty = 1, lwd = 2, col = alpha("grey50", 0.5))
-    }}
-  
+    }
+  }
+
   # Show start and end of identified calving events
   for (i in 1:nrow(dat_outp)) {
     abline(v = dat_outp$V5, lty = 2, lwd = 1.5, col = "green4")
@@ -94,10 +96,12 @@ rFunction <- function(data, threshold = NULL, window = 72, events_file = NULL, y
 
   app_artifacts_base_path <- Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/")
 
-  pdf(paste0(
+  pdf_path <- paste0(
     app_artifacts_base_path,
     paste("Parturition_vel", window, "h.pdf", sep = "")
-  ), width = 8, height = 12)
+  )
+  
+  pdf(pdf_path, width = 8, height = 12)
 
   par(mfrow = c(4, 3), mar = c(4, 4, 3, 1))
 
@@ -164,7 +168,11 @@ rFunction <- function(data, threshold = NULL, window = 72, events_file = NULL, y
       )
 
       if (is.null(data_temp)) {
-        return()
+        dev.off()
+        if (file.exists(pdf_path)) { # delete pdf if we failed to run parturition for all animals
+          file.remove(pdf_path)
+        }
+        return(NULL)
       }
 
 
@@ -221,23 +229,28 @@ rFunction <- function(data, threshold = NULL, window = 72, events_file = NULL, y
 
       # Read the local known calving events file, if provided
       known_calving_file <- getAuxiliaryFilePath("events_file")
-      if(!is.null(known_calving_file)){
-      known_calving <- read.csv((getAuxiliaryFilePath("events_file")),
-                                 header = T, colClasses="character",
-                                 na.strings = c("NA","n/a","NaN",""))
-      known_calving$known_birthdate <- as.POSIXct(known_calving$birthdate, tz="UTC", 
-                                                  format="%Y-%m-%d", origin = "1970-01-01")
-      known_calving <- known_calving %>% select("track_id","known_birthdate")
-      
-      # Add known calving event to output if present
-      dat_output <- merge(dat_output, known_calving, by.x = 1, by.y = "track_id",
-                          all.x = TRUE, all.y = FALSE, sort = FALSE)
+      if (!is.null(known_calving_file)) {
+        known_calving <- read.csv((getAuxiliaryFilePath("events_file")),
+          header = T, colClasses = "character",
+          na.strings = c("NA", "n/a", "NaN", "")
+        )
+        known_calving$known_birthdate <- as.POSIXct(known_calving$birthdate,
+          tz = "UTC",
+          format = "%Y-%m-%d", origin = "1970-01-01"
+        )
+        known_calving <- known_calving %>% select("track_id", "known_birthdate")
+
+        # Add known calving event to output if present
+        dat_output <- merge(dat_output, known_calving,
+          by.x = 1, by.y = "track_id",
+          all.x = TRUE, all.y = FALSE, sort = FALSE
+        )
       }
-      
+
       dat_updt[[i]] <- data_temp ### append data for multiple individuals
-      
+
       dat_fin_output[[i]] <- dat_output
-                  
+
       # plot the figures
       plot_speed(data_temp, dat_output,
         yul = yaxs_limit,
@@ -253,30 +266,32 @@ rFunction <- function(data, threshold = NULL, window = 72, events_file = NULL, y
   dat_final <- do.call(rbind, dat_updt)
   dat_final$case[is.na(dat_final$case)] <- 0
   dat_final_output <- do.call(rbind, dat_fin_output)
-  if(!is.null(known_calving_file)){
-  names(dat_final_output) <- c(
-    "track_id", "individual_local_identifier", "number_max_reloc",
-    "threshold_speed_meters_per_hour", "start_date", "end_date",
-    "number_detected_events", "location_long", "location_lat",
-    "known_birthdate"
-  )
+  if (!is.null(known_calving_file)) {
+    names(dat_final_output) <- c(
+      "track_id", "individual_local_identifier", "number_max_reloc",
+      "threshold_speed_meters_per_hour", "start_date", "end_date",
+      "number_detected_events", "location_long", "location_lat",
+      "known_birthdate"
+    )
   } else {
-  names(dat_final_output) <- c(
-    "track_id", "individual_local_identifier", "number_max_reloc",
-    "threshold_speed_meters_per_hour", "start_date", "end_date",
-    "number_detected_events", "location_long", "location_lat"
-  )
+    names(dat_final_output) <- c(
+      "track_id", "individual_local_identifier", "number_max_reloc",
+      "threshold_speed_meters_per_hour", "start_date", "end_date",
+      "number_detected_events", "location_long", "location_lat"
+    )
   }
-  
+
   # drop NA columns
   dat_final_output <- dat_final_output |>
     drop_na(start_date)
-  
+
   # format dates consistently
-  dat_final_output$start_date <- format(as.POSIXct(dat_final_output$start_date, tz="UTC"), 
-                                        format="%Y-%m-%d %H:%M:%S")
-  dat_final_output$end_date <- format(as.POSIXct(dat_final_output$end_date, tz="UTC"), 
-                                      format="%Y-%m-%d %H:%M:%S")
+  dat_final_output$start_date <- format(as.POSIXct(dat_final_output$start_date, tz = "UTC"),
+    format = "%Y-%m-%d %H:%M:%S"
+  )
+  dat_final_output$end_date <- format(as.POSIXct(dat_final_output$end_date, tz = "UTC"),
+    format = "%Y-%m-%d %H:%M:%S"
+  )
 
   # write app artefact
   write.csv(dat_final_output, file = paste0(
@@ -288,14 +303,14 @@ rFunction <- function(data, threshold = NULL, window = 72, events_file = NULL, y
   dat_final <- left_join(
     dat_final,
     track_attribute_data,
-    join_by(trackID == !!original_track_id_column)
+    join_by(trackID == !!original_track_id_column),
+    suffix = c(".join_artefact_left", ".join_artefact_right")
   ) |>
-    dplyr::select(!one_of(!!original_track_id_column)) |>
-    rename(
-      !!original_track_id_column := trackID
-    )
-
-
+    dplyr::select(-contains(".join_artefact_right")) # drop duplicate columns
+  
+  # rename duplicate columns
+  colnames(dat_final) <- gsub(".join_artefact_left", "", colnames(dat_final))
+  
   data_move <- mt_as_move2(dat_final,
     coords = c("location_long", "location_lat"),
     time_column = "timestamp", crs = 4326,
