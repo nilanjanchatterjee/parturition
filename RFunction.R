@@ -11,12 +11,14 @@ library(lubridate)
 plot_speed <- function(dat, dat_outp, yul, track_id, threshold) {
   yr <- year(dat$timestamp[1])
 
+  
+  
   plot(dat$timestamp, dat$speed,
     main = paste(track_id, yr, sep = "_"), cex = 0.4, ylim = c(0, yul),
-    ylab = expression(paste("Distance /", Delta, "t")), xlab = "Time", col = "grey40"
+    ylab = expression(paste("Distance /", Delta, "t")), xlab = "Time", col = "grey30"
   )
 
-  lines(dat$timestamp, dat$speed, col = "grey30", main = paste(track_id, yr, sep = "_"))
+  lines(dat$timestamp, dat$speed, main = paste(track_id, yr, sep = "_"))
   lines(dat$timestamp, dat$rollm, col = "brown4", lwd = 1.5, main = paste(track_id, yr, sep = "_"))
   abline(h = ifelse(is.null(threshold), mean(dat$speed, na.rm = T), threshold), lty = 3, lwd = 2, col = "coral")
 
@@ -26,11 +28,17 @@ plot_speed <- function(dat, dat_outp, yul, track_id, threshold) {
       abline(v = dat_outp$known_birthdate, lty = 1, lwd = 2, col = alpha("grey50", 0.5))
     }
   }
-
   # Show start and end of identified calving events
   for (i in 1:nrow(dat_outp)) {
+    ## add shaded polygon region
+    rect(dat_outp$V5[i],par('usr')[3], dat_outp$V6[i], par('usr')[4], 
+         col = rgb(0.5,0.5,0.5,alpha=0.3), lty= 0)
+    
     abline(v = dat_outp$V5, lty = 2, lwd = 1.5, col = "green4")
     abline(v = dat_outp$V6, lty = 4, lwd = 1.5, col = "royalblue")
+    # Area with shading lines
+    
+    #polygon(c( dat_outp$V5[i],0), c(dat_outp$V6[i], 1000), col = "grey50")
   }
 }
 
@@ -71,6 +79,9 @@ plot_nsd <- function(dat, dat_outp, track_id) {
 
   # Show start and end of identified calving events
   for (i in 1:nrow(dat_outp)) {
+    ## add shaded polygon region
+    rect(dat_outp$V5[i],par('usr')[3], dat_outp$V6[i], par('usr')[4], 
+         col = rgb(0.5,0.5,0.5,alpha=0.3), lty= 0)
     abline(v = dat_outp$V5, lty = 2, lwd = 1.5, col = "green4")
     abline(v = dat_outp$V6, lty = 4, lwd = 1.5, col = "royalblue")
   }
