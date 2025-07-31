@@ -10,6 +10,8 @@ test_that("function executes with user-passed threshold", {
 })
 
 
+rFunction(data = test_data, window = 756)
+
 test_that("function executes with default threshold", {
   actual <- rFunction(data = test_data, window = 756)
   expected_count <- 3164
