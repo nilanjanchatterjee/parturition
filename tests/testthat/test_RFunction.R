@@ -1,6 +1,6 @@
 source(here("tests/testthat/helper.R"))
 
-test_data <- test_data("input3_move2loc_LatLon.rds")
+test_data <- test_data("input3.rds")
 
 
 test_that("function executes with user-passed threshold", {
@@ -11,6 +11,7 @@ test_that("function executes with user-passed threshold", {
 
 
 rFunction(data = test_data, window = 756)
+oldrFunction(data = test_data, window = 756)
 
 test_that("function executes with default threshold", {
   actual <- rFunction(data = test_data, window = 756)

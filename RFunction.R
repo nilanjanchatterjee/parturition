@@ -8,13 +8,34 @@ library(geosphere)
 library(lubridate)
 library(ggplot2)
 library(gridExtra)
+library(grid)
+library(elevatr)
+library(terra)
+library(viridisLite)
+library(tidyterra)
 
-# Configuration and Constants ------------------------------------------------
-
-PLOTS_PER_PAGE <- 4
-PDF_WIDTH <- 8
-PDF_HEIGHT <- 12
-PLOT_COLS <- 3
+#' Get elevation raster for track extent
+#' @param track_data processed track data
+#' @return SpatRaster object for ggplot
+get_elevation_raster <- function(track_data) {
+  tryCatch({
+    # Get elevation data - returns a SpatRaster
+    elevation <- elevatr::get_elev_raster(
+      locations = data.frame(
+        x = track_data$location_long,
+        y = track_data$location_lat
+      ), z = 6, prj = st_crs(4326), src = "aws",
+      override_size_check = T, clip = "locations")
+    
+    return(terra::rast(elevation))
+  }, error = function(e) {
+    warning("Could not retrieve elevation data: ", e$message)
+    return(NULL)
+  })
+}
+PLOTS_PER_ROW <- 3  # Speed, Location, NSD
+PDF_WIDTH <- 8.5   # Portrait orientation
+PDF_HEIGHT <- 11
 
 # Data Processing Functions ---------------------------------------------------
 
@@ -41,7 +62,7 @@ prepare_movement_data <- function(data) {
 #' @return processed data.frame with movement metrics
 calculate_movement_metrics <- function(track_data, window, track_id) {
   
-  track_data_timediff <- track_data |>
+  result <- track_data |>
     mutate(
       timediff = magic::shift(
         as.numeric(
@@ -50,42 +71,45 @@ calculate_movement_metrics <- function(track_data, window, track_id) {
         ), -1
       )
     ) |>
-    filter(timediff != 0)
-  
-  # validate rollmean parameters
-  
-  median_timediff <- median(track_data_timediff$timediff, na.rm = TRUE)
-  
-  if (window < median_timediff) {
-    logger.error(str_interp("Window ${window} less than median time between locations ${median_timediff} for track ${track_id}. Increase your window size."))
-    stop()
-  } 
-  
-  if ((window / median_timediff) > nrow(track_data_timediff)) {
-    logger.error(str_interp("Window ${window} too large for median time between locations ${median_timediff} for track ${track_id}. Decrease window size."))
-    stop()
-  }
-  
-  result <- track_data_timediff |>
+    filter(timediff != 0) |>
     mutate(
       nsd_km = distVincentyEllipsoid(
         cbind(location_long, location_lat),
         cbind(first(location_long), first(location_lat))
       ) / 1000,
       speed = distance / timediff,
-      speed_rolling_mean = rollmean(
-        speed,
-        window / median(timediff, na.rm = TRUE),
-        fill = NA
-      ),
-      nsd_km_rolling_mean = rollmean(
-        nsd_km,
-        window / median(timediff, na.rm = TRUE),
-        fill = NA
-      )
+      speed_rolling_mean = NA,
+      nsd_km_rolling_mean = NA
     )
   
-  return(result)
+  # validate rollmean parameters
+  median_timediff <- median(result$timediff, na.rm = TRUE)
+  valid_window <- TRUE
+  
+  if (window < median_timediff) {
+    valid_window <- FALSE
+    logger.error(str_interp("Window ${window} less than median time between locations ${median_timediff} for track ${track_id}. Increase your window size."))
+  } else if ((window / median_timediff) > nrow(result)) {
+    valid_window <- FALSE
+    logger.error(str_interp("Window ${window} too large for median time between locations ${median_timediff} for track ${track_id}. Decrease window size."))
+  } else {
+    result <- result |>
+      mutate(
+        speed_rolling_mean = rollmean(
+          speed,
+          window / median(timediff, na.rm = TRUE),
+          fill = NA
+        ),
+        nsd_km_rolling_mean = rollmean(
+          nsd_km,
+          window / median(timediff, na.rm = TRUE),
+          fill = NA
+        )
+      )
+  }
+  
+  return(list(df = result |> mutate(valid_window = valid_window),
+              valid_window = valid_window))
 }
 
 #' Identify parturition events based on movement patterns
@@ -106,8 +130,8 @@ identify_parturition_events <- function(track_data, working_threshold, window) {
       parturition_event = 0
     ) |>
     mutate(
-      run_change = ifelse(row_number() == n(), 
-                          run_positive[n() - 1], 
+      run_change = ifelse(row_number() == n(),
+                          run_positive[n() - 1],
                           run_change)
     )
   
@@ -133,7 +157,7 @@ identify_parturition_events <- function(track_data, working_threshold, window) {
 #' @param window window size
 #' @param original_track_id_column name of track ID column
 #' @return data.frame with event summaries
-create_event_summary <- function(track_data, track_id, animal_id, working_threshold, 
+create_event_summary <- function(track_data, track_id, animal_id, working_threshold,
                                  window, original_track_id_column) {
   cutoff <- floor(window / median(track_data$timediff, na.rm = TRUE))
   event_indices <- which(track_data$run_change >= cutoff - 1)
@@ -163,7 +187,7 @@ create_event_summary <- function(track_data, track_id, animal_id, working_thresh
         end_date = ifelse(is.na(end_idx), NA, track_data$timestamp[end_idx]) |>
           as.POSIXct(origin = "1970-01-01"),
         number_detected_events = n_events,
-        location_long = ifelse(is.na(start_idx), NA, 
+        location_long = ifelse(is.na(start_idx), NA,
                                mean(track_data$location_long[start_idx:end_idx], na.rm = TRUE)),
         location_lat = ifelse(is.na(start_idx), NA,
                               mean(track_data$location_lat[start_idx:end_idx], na.rm = TRUE))
@@ -185,7 +209,7 @@ load_known_events <- function(events_file) {
   }
   
   result <- tryCatch({
-    data <- read_csv(events_file, 
+    data <- read_csv(events_file,
                      col_types = cols(.default = "c"),
                      na = c("NA", "n/a", "NaN", "")) |>
       mutate(
@@ -204,80 +228,132 @@ load_known_events <- function(events_file) {
 
 # Plotting Functions ----------------------------------------------------------
 
-#' Create speed plot with parturition events
+#' Create speed plot without title (for combined display)
 #' @param track_data processed track data
 #' @param event_summary event summary data
-#' @param track_id track identifier
 #' @param working_threshold speed threshold
 #' @param y_limit y-axis limit
+#' @param y_scale_option optional y-axis scaling option
+#' @param y_scale_multiplier multiplier for threshold-based scaling
 #' @return ggplot object
-create_speed_plot <- function(track_data, event_summary, track_id, working_threshold, y_limit) {
-  year_label <- year(track_data$timestamp[1])
+create_speed_plot_no_title <- function(track_data, event_summary, working_threshold, y_limit, y_scale_option = NULL, y_scale_multiplier = NULL) {
+  # Get colors
+  colors <- get_r4_colors()
+  
+  # Determine y-axis limit based on scaling options
+  if (!is.null(y_scale_option)) {
+    if (y_scale_option == "threshold_multiplier" && !is.null(y_scale_multiplier)) {
+      actual_y_limit <- working_threshold * y_scale_multiplier
+    } else if (is.numeric(y_scale_option)) {
+      actual_y_limit <- y_scale_option
+    } else {
+      actual_y_limit <- y_limit  # fallback to default
+    }
+  } else {
+    actual_y_limit <- y_limit  # use original default
+  }
+  
+  # Color mapping:
+  # colors[1] = "#000000" (Black) - main data
+  # colors[2] = "#E69F00" (Orange) - working threshold
+  # colors[3] = "#56B4E9" (Sky blue) - event end
+  # colors[4] = "#009E73" (Bluish green) - event start  
+  # colors[6] = "#0072B2" (Blue) - known parturition
+  # colors[8] = "#CC79A7" (Reddish purple) - rolling mean
   
   p <- ggplot(track_data, aes(x = timestamp)) +
-    geom_point(aes(y = speed), color = "grey30", size = 0.4, alpha = 0.7) +
-    geom_line(aes(y = speed), color = "grey30", alpha = 0.5) +
-    geom_line(aes(y = speed_rolling_mean), color = "brown4", linewidth = 1.5) +
-    geom_hline(yintercept = working_threshold, 
-               linetype = "dotted", linewidth = 2, color = "coral") +
-    labs(
-      title = paste(track_id, year_label, sep = "_"),
-      x = "Time",
-      y = expression(paste("Distance /", Delta, "t"))
-    ) +
-    ylim(0, y_limit) +
+    geom_point(aes(y = speed), color = colors[1], size = 0.4, alpha = 0.7) +
+    geom_line(aes(y = speed), color = colors[1], alpha = 0.5) +
+    geom_hline(yintercept = working_threshold, linetype = "dotted", color = colors[2]) +
+    labs(x = "Time", y = expression(paste("Speed (Distance/", Delta, "t)"))) +
+    ylim(0, actual_y_limit) +
+    scale_x_datetime(date_labels = "%m/%d/%y", date_breaks = "3 months") +
     theme_minimal() +
-    theme(plot.title = element_text(size = 10))
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+      axis.text.y = element_text(size = 8),
+      axis.title = element_text(size = 9),
+      plot.margin = margin(5, 5, 5, 5),
+      panel.spacing = unit(0, "lines"),
+      aspect.ratio = NULL
+    )
   
-  # Add known calving events
+  if (any(!is.na(track_data$speed_rolling_mean))) {
+    p <- p + geom_line(aes(y = speed_rolling_mean), color = colors[8])
+  }
+  
+  # Add known parturition events
   if ("known_birthdate" %in% names(event_summary) && !all(is.na(event_summary$known_birthdate))) {
     known_dates <- event_summary$known_birthdate[!is.na(event_summary$known_birthdate)]
-    p <- p + geom_vline(xintercept = as.numeric(known_dates),
-                        linetype = "solid", linewidth = 2, 
-                        color = alpha("grey50", 0.5))
+    if (!inherits(known_dates, "POSIXct")) {
+      known_dates <- as.POSIXct(known_dates)
+    }
+    p <- p + geom_vline(xintercept = known_dates, linetype = "solid", color = colors[6])
   }
   
   # Add detected events
   if (nrow(event_summary) > 0) {
     for (i in seq_len(nrow(event_summary))) {
       if (!is.na(event_summary$start_date[i]) && !is.na(event_summary$end_date[i])) {
-        # Shaded region
-        p <- p + annotate("rect",
-                          xmin = as.numeric(event_summary$start_date[i]),
-                          xmax = as.numeric(event_summary$end_date[i]),
-                          ymin = -Inf, ymax = Inf,
-                          fill = "grey50", alpha = 0.3)
+        start_date <- event_summary$start_date[i]
+        end_date <- event_summary$end_date[i]
         
-        # Start and end lines
-        p <- p + geom_vline(xintercept = as.numeric(event_summary$start_date[i]),
-                            linetype = "dashed", linewidth = 1.5, color = "green4")
-        p <- p + geom_vline(xintercept = as.numeric(event_summary$end_date[i]),
-                            linetype = "dotdash", linewidth = 1.5, color = "royalblue")
+        if (!inherits(start_date, "POSIXct")) {
+          start_date <- as.POSIXct(start_date)
+        }
+        if (!inherits(end_date, "POSIXct")) {
+          end_date <- as.POSIXct(end_date)
+        }
+        
+        p <- p + annotate("rect", xmin = start_date, xmax = end_date, ymin = -Inf, ymax = Inf, fill = "grey50", alpha = 0.3) +
+          geom_vline(xintercept = start_date, linetype = "dashed", color = colors[4]) +
+          geom_vline(xintercept = end_date, linetype = "dotdash", color = colors[3])
       }
     }
   }
   
-  p
+  return(p)
 }
 
-#' Create location plot with parturition events
+#' Create location plot without title
 #' @param track_data processed track data
 #' @param event_summary event summary data
-#' @param track_id track identifier
 #' @return ggplot object
-create_location_plot <- function(track_data, event_summary, track_id) {
-  year_label <- year(track_data$timestamp[1])
+create_location_plot_no_title <- function(track_data, event_summary) {
+  # Get colors
+  colors <- get_r4_colors()
   
-  p <- ggplot(track_data, aes(x = location_long, y = location_lat)) +
-    geom_point(size = 0.4, alpha = 0.7) +
-    geom_path() +
-    labs(
-      title = paste(track_id, year_label, sep = "_"),
-      x = "Longitude",
-      y = "Latitude"
-    ) +
+  # Get elevation raster
+  elev_raster <- get_elevation_raster(track_data)
+  
+  p <- ggplot()
+  
+  # Add elevation background if available
+  if (!is.null(elev_raster)) {
+    p <- p + 
+      tidyterra::geom_spatraster(data = elev_raster, alpha = 0.7) +
+      scale_fill_viridis_c(name = "Elevation\n(m)", option = "terrain", na.value = "transparent")
+  }
+  
+  # Add track data
+  p <- p + 
+    geom_point(data = track_data, aes(x = location_long, y = location_lat), 
+               size = 0.4, alpha = 0.8, color = colors[1]) +
+    geom_path(data = track_data, aes(x = location_long, y = location_lat), 
+              alpha = 0.7, color = colors[1]) +
+    labs(x = "Longitude", y = "Latitude") +
     theme_minimal() +
-    theme(plot.title = element_text(size = 10))
+    theme(
+      axis.text = element_text(size = 8),
+      axis.title = element_text(size = 9),
+      plot.margin = margin(5, 5, 5, 5),
+      panel.spacing = unit(0, "lines"),
+      aspect.ratio = NULL,
+      legend.position = "right",
+      legend.key.size = unit(0.3, "cm"),
+      legend.title = element_text(size = 7),
+      legend.text = element_text(size = 6)
+    )
   
   # Add parturition locations
   if (nrow(event_summary) > 0) {
@@ -285,117 +361,285 @@ create_location_plot <- function(track_data, event_summary, track_id) {
       filter(!is.na(location_long), !is.na(location_lat))
     
     if (nrow(valid_locations) > 0) {
-      p <- p +
-        geom_point(data = valid_locations, 
-                   aes(x = location_long, y = location_lat),
-                   shape = 4, size = 3, color = "green4") +
-        geom_point(data = valid_locations, 
-                   aes(x = location_long, y = location_lat),
-                   shape = 19, size = 1.5, color = "royalblue")
+      p <- p + 
+        geom_point(data = valid_locations, aes(x = location_long, y = location_lat), 
+                   shape = 4, size = 4, color = colors[4], stroke = 1.5) +
+        geom_point(data = valid_locations, aes(x = location_long, y = location_lat), 
+                   shape = 19, size = 2, color = colors[3])
     }
   }
   
-  p
+  return(p)
 }
 
-#' Create net squared displacement plot
+#' Create NSD plot without title
 #' @param track_data processed track data
 #' @param event_summary event summary data
-#' @param track_id track identifier
 #' @return ggplot object
-create_nsd_plot <- function(track_data, event_summary, track_id) {
-  year_label <- year(track_data$timestamp[1])
+create_nsd_plot_no_title <- function(track_data, event_summary) {
+  # Get colors
+  colors <- get_r4_colors()
   
   p <- ggplot(track_data, aes(x = timestamp)) +
-    geom_line(aes(y = nsd_km), color = "black") +
-    geom_line(aes(y = nsd_km_rolling_mean), color = "brown4", linewidth = 1) +
-    labs(
-      title = paste(track_id, year_label, sep = "_"),
-      x = "Time",
-      y = "Net squared displacement (km)"
-    ) +
+    geom_line(aes(y = nsd_km), color = colors[1], alpha = 0.7) +
+    labs(x = "Time", y = "Net Squared Displacement (km)") +
+    scale_x_datetime(date_labels = "%m/%d/%y", date_breaks = "3 months") +
     theme_minimal() +
-    theme(plot.title = element_text(size = 10))
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+      axis.text.y = element_text(size = 8),
+      axis.title = element_text(size = 9),
+      plot.margin = margin(5, 5, 5, 5),
+      panel.spacing = unit(0, "lines"),
+      aspect.ratio = NULL
+    )
   
-  # Add known calving events
-  if ("known_birthdate" %in% names(event_summary) && !all(is.na(event_summary$known_birthdate))) {
-    known_dates <- event_summary$known_birthdate[!is.na(event_summary$known_birthdate)]
-    p <- p + geom_vline(xintercept = as.numeric(known_dates),
-                        linetype = "solid", linewidth = 2, 
-                        color = alpha("grey50", 0.5))
+  if(any(!is.na(track_data$nsd_km_rolling_mean))) {
+    p <- p + geom_line(aes(y = nsd_km_rolling_mean), color = colors[7])
   }
   
-  # Add detected events (same logic as speed plot)
+  # Add known parturition events
+  if ("known_birthdate" %in% names(event_summary) && !all(is.na(event_summary$known_birthdate))) {
+    known_dates <- event_summary$known_birthdate[!is.na(event_summary$known_birthdate)]
+    if (!inherits(known_dates, "POSIXct")) {
+      known_dates <- as.POSIXct(known_dates)
+    }
+    p <- p + geom_vline(xintercept = known_dates, linetype = "solid", color = colors[2])
+  }
+  
+  # Add detected events
   if (nrow(event_summary) > 0) {
     for (i in seq_len(nrow(event_summary))) {
       if (!is.na(event_summary$start_date[i]) && !is.na(event_summary$end_date[i])) {
-        p <- p + annotate("rect",
-                          xmin = as.numeric(event_summary$start_date[i]),
-                          xmax = as.numeric(event_summary$end_date[i]),
-                          ymin = -Inf, ymax = Inf,
-                          fill = "grey50", alpha = 0.3)
+        start_date <- event_summary$start_date[i]
+        end_date <- event_summary$end_date[i]
         
-        p <- p + geom_vline(xintercept = as.numeric(event_summary$start_date[i]),
-                            linetype = "dashed", linewidth = 1.5, color = "green4")
-        p <- p + geom_vline(xintercept = as.numeric(event_summary$end_date[i]),
-                            linetype = "dotdash", linewidth = 1.5, color = "royalblue")
+        if (!inherits(start_date, "POSIXct")) {
+          start_date <- as.POSIXct(start_date)
+        }
+        if (!inherits(end_date, "POSIXct")) {
+          end_date <- as.POSIXct(end_date)
+        }
+        
+        p <- p + annotate("rect", xmin = start_date, xmax = end_date, ymin = -Inf, ymax = Inf, fill = "grey50", alpha = 0.3) +
+          geom_vline(xintercept = start_date, linetype = "dashed", color = colors[4]) +
+          geom_vline(xintercept = end_date, linetype = "dotdash", color = colors[3])
       }
     }
   }
   
-  p
+  return(p)
 }
 
-#' Create all plots for a single track
+#' Create a combined plot row for a single track
 #' @param track_data processed track data
 #' @param event_summary event summary data
 #' @param track_id track identifier
 #' @param working_threshold speed threshold
 #' @param y_limit y-axis limit
-#' @return list of ggplot objects
-create_track_plots <- function(track_data, event_summary, track_id, working_threshold, y_limit) {
-  plots <- list(
-    speed = create_speed_plot(track_data, event_summary, track_id, working_threshold, y_limit),
-    location = create_location_plot(track_data, event_summary, track_id),
-    nsd = create_nsd_plot(track_data, event_summary, track_id)
+#' @param y_scale_option optional y-axis scaling option
+#' @param y_scale_multiplier multiplier for threshold-based scaling
+#' @return combined plot object
+create_track_row <- function(track_data, event_summary, track_id, working_threshold, y_limit, y_scale_option = NULL, y_scale_multiplier = NULL) {
+  year_label <- year(track_data$timestamp[1])
+  base_title <- paste(track_id, year_label, sep = "_")
+  
+  # Check if analysis worked by looking at valid_window column
+  analysis_failed <- FALSE
+  if ("valid_window" %in% names(track_data)) {
+    analysis_failed <- !all(track_data$valid_window, na.rm = TRUE)
+  }
+  
+  # Create title with status indicator
+  if (analysis_failed) {
+    title <- paste(base_title, "ANALYSIS FAILED - Check logs")
+    title_color <- "red"
+  } else {
+    title <- base_title
+    title_color <- "darkgreen"
+  }
+  
+  # Create individual plots without titles - NEW ORDER: Location, Speed, NSD
+  location_plot <- create_location_plot_no_title(track_data, event_summary)
+  speed_plot <- create_speed_plot_no_title(track_data, event_summary, working_threshold, y_limit, y_scale_option, y_scale_multiplier)
+  nsd_plot <- create_nsd_plot_no_title(track_data, event_summary)
+  
+  # Create shared title as a text grob with status color
+  title_grob <- grid::textGrob(
+    title, 
+    gp = grid::gpar(fontsize = 12, fontface = "bold", col = title_color),
+    hjust = 0.5
   )
   
-  return(plots)
+  # Combine plots horizontally with shared title - NEW ORDER
+  combined_plot <- gridExtra::arrangeGrob(
+    title_grob,
+    gridExtra::arrangeGrob(location_plot, speed_plot, nsd_plot, ncol = 3),
+    ncol = 1,
+    heights = c(0.08, 0.92)  # Title takes 8% of height
+  )
+  
+  return(combined_plot)
 }
 
-#' Render plots to PDF
-#' @param plot_list list of plot objects
+#' Create all plots for multiple tracks (improved version)
+#' @param all_processed_data list of processed track data
+#' @param all_event_summaries list of event summaries
+#' @param track_ids vector of track identifiers
+#' @param working_thresholds vector of working thresholds
+#' @param y_limit y-axis limit
+#' @param y_scale_option optional y-axis scaling option
+#' @param y_scale_multiplier multiplier for threshold-based scaling
+#' @return list of combined plot objects
+create_all_track_plots <- function(all_processed_data, all_event_summaries, 
+                                   track_ids, working_thresholds, y_limit, y_scale_option = NULL, y_scale_multiplier = NULL) {
+  plot_rows <- list()
+  
+  for (i in seq_along(all_processed_data)) {
+    if (!is.null(all_processed_data[[i]]) && nrow(all_processed_data[[i]]) > 0) {
+      plot_rows[[i]] <- create_track_row(
+        all_processed_data[[i]], 
+        all_event_summaries[[i]], 
+        track_ids[i], 
+        working_thresholds[i], 
+        y_limit,
+        y_scale_option,
+        y_scale_multiplier
+      )
+    }
+  }
+  
+  # Remove NULL elements
+  plot_rows <- plot_rows[!sapply(plot_rows, is.null)]
+  return(plot_rows)
+}
+
+#' Render improved plots to PDF
+#' @param plot_rows list of combined plot row objects
 #' @param output_path path for PDF output
 #' @param window window size for filename
-render_plots_to_pdf <- function(plot_list, output_path, window) {
-  if (length(plot_list) == 0) {
+#' @param threshold threshold value for filename
+#' @param tracks_per_page number of track rows per page
+render_improved_plots_to_pdf <- function(plot_rows, output_path, window, threshold = NULL, tracks_per_page = 3) {
+  if (length(plot_rows) == 0) {
+    message("No plots to render")
     return(invisible(NULL))
   }
   
-  pdf_path <- str_interp("${output_path}parturition_velocity_${window}h.pdf")
-  n_pages <- ceiling(length(plot_list) / PLOTS_PER_PAGE)
+  # Create filename with threshold info
+  threshold_text <- if (is.null(threshold)) "average" else as.character(threshold)
+  pdf_path <- str_interp("${output_path}parturition_analysis_${window}h_threshold_${threshold_text}.pdf")
+  n_pages <- ceiling(length(plot_rows) / tracks_per_page)
   
+  # Start PDF device
   pdf(pdf_path, width = PDF_WIDTH, height = PDF_HEIGHT)
   
+  # Create legend page first
+  grid::grid.newpage()
+  
+  # Get colors for legend
+  colors <- get_r4_colors()
+  
+  # Create legend with colored text
+  grid::grid.text("Parturition Analysis Results", x = 0.05, y = 0.95, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 14, fontface = "bold"))
+  
+  grid::grid.text("TITLE STATUS INDICATORS:", x = 0.05, y = 0.90, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 11, fontface = "bold"))
+  grid::grid.text("Green text: Analysis completed successfully", x = 0.05, y = 0.87, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = "darkgreen"))
+  grid::grid.text("Red text: ANALYSIS FAILED - Window size issues - check logs for details", 
+                  x = 0.05, y = 0.84, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = "red"))
+  
+  grid::grid.text("PLOT LEGEND:", x = 0.05, y = 0.79, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 11, fontface = "bold"))
+  
+  grid::grid.text("Location Plot (Left):", x = 0.05, y = 0.75, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, fontface = "bold"))
+  grid::grid.text("Background: Elevation raster (terrain colors)", x = 0.05, y = 0.72, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10))
+  grid::grid.text("Black points/line: Animal track", x = 0.05, y = 0.69, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = colors[1]))
+  grid::grid.text("Bluish green X + Sky blue dot: Detected parturition location", 
+                  x = 0.05, y = 0.66, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = colors[4]))
+  
+  grid::grid.text("Speed Plot (Center):", x = 0.05, y = 0.61, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, fontface = "bold"))
+  grid::grid.text("Black points/line: Raw speed data", x = 0.05, y = 0.58, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = colors[1]))
+  grid::grid.text("Reddish purple line: Rolling mean speed", x = 0.05, y = 0.55, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = colors[8]))
+  grid::grid.text("Orange dotted line: Working threshold", x = 0.05, y = 0.52, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = colors[2]))
+  grid::grid.text("Grey shaded area: Detected parturition event", x = 0.05, y = 0.49, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = "grey50"))
+  grid::grid.text("Bluish green dashed line: Event start", x = 0.05, y = 0.46, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = colors[4]))
+  grid::grid.text("Sky blue dot-dash line: Event end", x = 0.05, y = 0.43, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = colors[3]))
+  grid::grid.text("Blue solid line: Known parturition date (if available)", 
+                  x = 0.05, y = 0.40, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = colors[6]))
+  
+  grid::grid.text("NSD Plot (Right):", x = 0.05, y = 0.35, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, fontface = "bold"))
+  grid::grid.text("Black line: Net squared displacement", x = 0.05, y = 0.32, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = colors[1]))
+  grid::grid.text("Reddish purple line: Rolling mean NSD", x = 0.05, y = 0.29, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10, col = colors[8]))
+  grid::grid.text("Event markers same as speed plot", x = 0.05, y = 0.26, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10))
+  
+  grid::grid.text("Date Format: mm/dd/yy (marks show exact date)", x = 0.05, y = 0.21, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10))
+  
+  grid::grid.text(paste("Analysis window:", window, "hours"), x = 0.05, y = 0.17, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10))
+  grid::grid.text(paste("Threshold:", if (is.null(threshold)) "Rolling average" else threshold), 
+                  x = 0.05, y = 0.14, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10))
+  grid::grid.text(paste("Generated on:", Sys.time()), x = 0.05, y = 0.11, just = c("left", "top"), 
+                  gp = grid::gpar(fontsize = 10))
+  
+  # Create data pages - all with same layout regardless of number of plots
   for (page in seq_len(n_pages)) {
-    start_idx <- (page - 1) * PLOTS_PER_PAGE + 1
-    end_idx <- min(page * PLOTS_PER_PAGE, length(plot_list))
+    start_idx <- (page - 1) * tracks_per_page + 1
+    end_idx <- min(page * tracks_per_page, length(plot_rows))
     
-    page_plots <- plot_list[start_idx:end_idx] |>
-      map(~ list(.x$speed, .x$location, .x$nsd)) |>
-      flatten() |>
-      compact()
-    
-    browser()
+    page_plots <- plot_rows[start_idx:end_idx]
     
     if (length(page_plots) > 0) {
-      grid.arrange(grobs = page_plots, ncol = PLOT_COLS)
+      # Create new page
+      grid::grid.newpage()
+      
+      # Always use the same layout (3 equal sections) regardless of actual plot count
+      heights <- c(1/3, 1/3, 1/3)
+      
+      # Create empty grobs for missing plots to maintain consistent layout
+      all_plots <- list()
+      for (i in 1:3) {
+        if (i <= length(page_plots)) {
+          all_plots[[i]] <- page_plots[[i]]
+        } else {
+          all_plots[[i]] <- grid::nullGrob()  # Empty space
+        }
+      }
+      
+      # Arrange plots with consistent spacing
+      combined_page <- gridExtra::arrangeGrob(
+        grobs = all_plots,
+        ncol = 1,
+        heights = heights
+      )
+      
+      grid::grid.draw(combined_page)
     }
   }
   
   dev.off()
-  
-  message("Plots saved to: ", pdf_path)
+  message("Enhanced plots with legend saved to: ", pdf_path)
   return(invisible(pdf_path))
 }
 
@@ -407,12 +651,31 @@ render_plots_to_pdf <- function(plot_list, output_path, window) {
 #' @param original_track_id_column track ID column name
 #' @return animal ID
 get_animal_id <- function(data, track_id, original_track_id_column) {
-  animal_id <- mt_track_data(data) |>
-    filter(!!sym(original_track_id_column) == track_id) |>
-    pull(individual_local_identifier) |>
-    first()
-  
-  return(animal_id)
+  tryCatch({
+    track_attributes <- mt_track_data(data)
+    
+    # Check if individual_local_identifier column exists
+    if ("individual_local_identifier" %in% names(track_attributes)) {
+      animal_id <- track_attributes |>
+        filter(!!sym(original_track_id_column) == track_id) |>
+        pull(individual_local_identifier) |>
+        first()
+      
+      # Return "unknown" if animal_id is NA or NULL
+      if (is.na(animal_id) || is.null(animal_id)) {
+        return("unknown")
+      } else {
+        return(animal_id)
+      }
+    } else {
+      # Column doesn't exist, return "unknown"
+      return("unknown")
+    }
+  }, error = function(e) {
+    # If any error occurs, return "unknown"
+    warning("Could not retrieve animal ID: ", e$message)
+    return("unknown")
+  })
 }
 
 #' Filter data for specific track
@@ -453,11 +716,13 @@ has_sufficient_data <- function(track_data, window) {
 #' @param window rolling window size in hours
 #' @param events_file path to known events file
 #' @param yaxis_limit y-axis limit for speed plots
+#' @param speed_plot_ylimit optional manual y-axis limit for speed plot (numeric value)
+#' @param speed_plot_ylimit_multiplier optional multiplier for threshold-based y-axis scaling (e.g., 2 for 2x threshold)
 #' @return updated move2 object with parturition indicators
-rFunction <- function(data, threshold = NULL, window = 72, 
-                      events_file = NULL, yaxis_limit = 1000) {
+rFunction <- function(data, threshold = NULL, window = 72,
+                      events_file = NULL, yaxis_limit = 1000, 
+                      speed_plot_ylimit = NULL, speed_plot_ylimit_multiplier = NULL) {
   
-
   # Setup
   original_track_id_column <- mt_track_id_column(data)
   app_artifacts_base_path <- Sys.getenv("APP_ARTIFACTS_DIR", "/tmp/")
@@ -472,7 +737,7 @@ rFunction <- function(data, threshold = NULL, window = 72,
   # Initialize storage
   all_processed_data <- list()
   all_event_summaries <- list()
-  all_plots <- list()
+  all_working_thresholds <- numeric(length(track_ids))
   
   # Process each track
   for (i in seq_along(track_ids)) {
@@ -490,25 +755,29 @@ rFunction <- function(data, threshold = NULL, window = 72,
     }
     
     # Calculate movement metrics
-    processed_data <- tryCatch({
-      calculate_movement_metrics(track_data, window, track_id)
-    }, error = function(e) {
-      NULL
-    })
+    processed_data_result <- calculate_movement_metrics(track_data, window, track_id)
+    processed_data <- processed_data_result$df
     
-    if (is.null(processed_data)) next
+    if (!processed_data_result$valid_window) {
+      event_summary <- tibble()
+      working_threshold <- threshold %||% 0  # Default for failed analysis
+    } else {
+      
+      # Determine threshold
+      working_threshold <- threshold %||% mean(processed_data$speed_rolling_mean, na.rm = TRUE)
+      
+      # Identify parturition events
+      processed_data <- identify_parturition_events(processed_data, working_threshold, window)
+      
+      # Create event summary
+      event_summary <- create_event_summary(
+        processed_data, track_id, animal_id, working_threshold, 
+        window, original_track_id_column
+      )
+    }
     
-    # Determine threshold
-    working_threshold <- threshold %||% mean(processed_data$speed_rolling_mean, na.rm = TRUE)
-    
-    # Identify parturition events
-    processed_data <- identify_parturition_events(processed_data, working_threshold, window)
-    
-    # Create event summary
-    event_summary <- create_event_summary(
-      processed_data, track_id, animal_id, working_threshold, 
-      window, original_track_id_column
-    )
+    # Store working threshold
+    all_working_thresholds[i] <- working_threshold
     
     # Add known events if available
     if (!is.null(known_events)) {
@@ -519,23 +788,17 @@ rFunction <- function(data, threshold = NULL, window = 72,
     # Store results
     all_processed_data[[i]] <- processed_data
     all_event_summaries[[i]] <- event_summary
-    
-    # Create plots
-    if (nrow(event_summary) > 0) {
-      all_plots[[i]] <- create_track_plots(
-        processed_data, event_summary, track_id, working_threshold, yaxis_limit
-      )
-    }
   }
   
   # Combine results
-  final_processed_data <- do.call(rbind, all_processed_data)
-  final_event_summaries <- do.call(rbind, all_event_summaries)
+  final_processed_data <- bind_rows(all_processed_data)
+  final_event_summaries <- bind_rows(all_event_summaries)
   
   # Generate outputs
   if (!is.null(final_event_summaries) && nrow(final_event_summaries) > 0) {
-    # Save CSV
-    csv_path <- str_interp("${app_artifacts_base_path}parturition_output_${window}h.csv")
+    # Save CSV with threshold in filename
+    threshold_text <- if (is.null(threshold)) "average" else as.character(threshold)
+    csv_path <- str_interp("${app_artifacts_base_path}parturition_output_${window}h_threshold_${threshold_text}.csv")
     
     final_event_summaries |>
       filter(!is.na(start_date)) |>
@@ -548,9 +811,44 @@ rFunction <- function(data, threshold = NULL, window = 72,
     message("Results saved to: ", csv_path)
   }
   
-  # Render plots
-  if (length(all_plots) > 0) {
-    render_plots_to_pdf(all_plots, app_artifacts_base_path, window)
+  # Generate enhanced plots
+  if (length(all_processed_data) > 0) {
+    # Filter out NULL processed data and corresponding elements
+    valid_indices <- !sapply(all_processed_data, is.null)
+    
+    if (any(valid_indices)) {
+      valid_processed_data <- all_processed_data[valid_indices]
+      valid_event_summaries <- all_event_summaries[valid_indices]
+      valid_track_ids <- track_ids[valid_indices]
+      valid_thresholds <- all_working_thresholds[valid_indices]
+      
+      # Determine y-axis scaling options for speed plot
+      y_scale_option <- NULL
+      y_scale_multiplier <- NULL
+      
+      if (!is.null(speed_plot_ylimit)) {
+        y_scale_option <- speed_plot_ylimit
+      } else if (!is.null(speed_plot_ylimit_multiplier)) {
+        y_scale_option <- "threshold_multiplier"
+        y_scale_multiplier <- speed_plot_ylimit_multiplier
+      }
+      
+      # Create all plot rows with shared titles and status indicators
+      plot_rows <- create_all_track_plots(
+        valid_processed_data, 
+        valid_event_summaries, 
+        valid_track_ids, 
+        valid_thresholds, 
+        yaxis_limit,
+        y_scale_option,
+        y_scale_multiplier
+      )
+      
+      # Render to PDF with legend page
+      if (length(plot_rows) > 0) {
+        render_improved_plots_to_pdf(plot_rows, app_artifacts_base_path, window, threshold)
+      }
+    }
   }
   
   # Return updated move2 object
