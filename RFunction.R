@@ -14,6 +14,21 @@ library(terra)
 library(viridisLite)
 library(tidyterra)
 
+# Okabe-Ito colorblind-friendly palette
+get_r4_colors <- function() {
+  return(c(
+    "#000000",  # Black
+    "#E69F00",  # Orange
+    "#56B4E9",  # Sky blue
+    "#009E73",  # Bluish green
+    "#F0E442",  # Yellow
+    "#0072B2",  # Blue
+    "#D55E00",  # Vermillion
+    "#CC79A7",  # Reddish purple
+    "#999999"   # Grey
+  ))
+}
+
 #' Get elevation raster for track extent
 #' @param track_data processed track data
 #' @return SpatRaster object for ggplot
@@ -33,6 +48,7 @@ get_elevation_raster <- function(track_data) {
     return(NULL)
   })
 }
+
 PLOTS_PER_ROW <- 3  # Speed, Location, NSD
 PDF_WIDTH <- 8.5   # Portrait orientation
 PDF_HEIGHT <- 11
@@ -233,25 +249,10 @@ load_known_events <- function(events_file) {
 #' @param event_summary event summary data
 #' @param working_threshold speed threshold
 #' @param y_limit y-axis limit
-#' @param y_scale_option optional y-axis scaling option
-#' @param y_scale_multiplier multiplier for threshold-based scaling
 #' @return ggplot object
-create_speed_plot_no_title <- function(track_data, event_summary, working_threshold, y_limit, y_scale_option = NULL, y_scale_multiplier = NULL) {
+create_speed_plot_no_title <- function(track_data, event_summary, working_threshold, y_limit) {
   # Get colors
   colors <- get_r4_colors()
-  
-  # Determine y-axis limit based on scaling options
-  if (!is.null(y_scale_option)) {
-    if (y_scale_option == "threshold_multiplier" && !is.null(y_scale_multiplier)) {
-      actual_y_limit <- working_threshold * y_scale_multiplier
-    } else if (is.numeric(y_scale_option)) {
-      actual_y_limit <- y_scale_option
-    } else {
-      actual_y_limit <- y_limit  # fallback to default
-    }
-  } else {
-    actual_y_limit <- y_limit  # use original default
-  }
   
   # Color mapping:
   # colors[1] = "#000000" (Black) - main data
@@ -266,7 +267,7 @@ create_speed_plot_no_title <- function(track_data, event_summary, working_thresh
     geom_line(aes(y = speed), color = colors[1], alpha = 0.5) +
     geom_hline(yintercept = working_threshold, linetype = "dotted", color = colors[2]) +
     labs(x = "Time", y = expression(paste("Speed (Distance/", Delta, "t)"))) +
-    ylim(0, actual_y_limit) +
+    ylim(0, y_limit) +
     scale_x_datetime(date_labels = "%m/%d/%y", date_breaks = "3 months") +
     theme_minimal() +
     theme(
@@ -318,21 +319,25 @@ create_speed_plot_no_title <- function(track_data, event_summary, working_thresh
 #' Create location plot without title
 #' @param track_data processed track data
 #' @param event_summary event summary data
+#' @param include_elevation whether to include elevation background
 #' @return ggplot object
-create_location_plot_no_title <- function(track_data, event_summary) {
+create_location_plot_no_title <- function(track_data, event_summary, include_elevation = FALSE) {
   # Get colors
   colors <- get_r4_colors()
   
-  # Get elevation raster
-  elev_raster <- get_elevation_raster(track_data)
-  
   p <- ggplot()
   
-  # Add elevation background if available
-  if (!is.null(elev_raster)) {
-    p <- p + 
-      tidyterra::geom_spatraster(data = elev_raster, alpha = 0.7) +
-      scale_fill_viridis_c(name = "Elevation\n(m)", option = "terrain", na.value = "transparent")
+  if (include_elevation) {
+    # Get elevation raster
+    elev_raster <- get_elevation_raster(track_data)
+    # Add elevation background if available
+    if (!is.null(elev_raster)) {
+      p <- p + 
+        tidyterra::geom_spatraster(data = elev_raster, alpha = 0.6) +
+        scale_fill_viridis_c(name = "Elevation (m)",
+                             option = "terrain",
+                             na.value = "transparent")
+    }
   }
   
   # Add track data
@@ -344,15 +349,18 @@ create_location_plot_no_title <- function(track_data, event_summary) {
     labs(x = "Longitude", y = "Latitude") +
     theme_minimal() +
     theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
       axis.text = element_text(size = 8),
       axis.title = element_text(size = 9),
       plot.margin = margin(5, 5, 5, 5),
       panel.spacing = unit(0, "lines"),
       aspect.ratio = NULL,
-      legend.position = "right",
-      legend.key.size = unit(0.3, "cm"),
+      legend.position = "bottom",
+      legend.key.width = unit(0.8, "cm"),
+      legend.key.height = unit(0.2, "cm"),
       legend.title = element_text(size = 7),
-      legend.text = element_text(size = 6)
+      legend.text = element_text(size = 6),
+      legend.margin = margin(t = 2, b = 2)
     )
   
   # Add parturition locations
@@ -395,7 +403,7 @@ create_nsd_plot_no_title <- function(track_data, event_summary) {
     )
   
   if(any(!is.na(track_data$nsd_km_rolling_mean))) {
-    p <- p + geom_line(aes(y = nsd_km_rolling_mean), color = colors[7])
+    p <- p + geom_line(aes(y = nsd_km_rolling_mean), color = colors[8])
   }
   
   # Add known parturition events
@@ -404,7 +412,7 @@ create_nsd_plot_no_title <- function(track_data, event_summary) {
     if (!inherits(known_dates, "POSIXct")) {
       known_dates <- as.POSIXct(known_dates)
     }
-    p <- p + geom_vline(xintercept = known_dates, linetype = "solid", color = colors[2])
+    p <- p + geom_vline(xintercept = known_dates, linetype = "solid", color = colors[6])
   }
   
   # Add detected events
@@ -437,10 +445,9 @@ create_nsd_plot_no_title <- function(track_data, event_summary) {
 #' @param track_id track identifier
 #' @param working_threshold speed threshold
 #' @param y_limit y-axis limit
-#' @param y_scale_option optional y-axis scaling option
-#' @param y_scale_multiplier multiplier for threshold-based scaling
+#' @param include_elevation whether to include elevation background
 #' @return combined plot object
-create_track_row <- function(track_data, event_summary, track_id, working_threshold, y_limit, y_scale_option = NULL, y_scale_multiplier = NULL) {
+create_track_row <- function(track_data, event_summary, track_id, working_threshold, y_limit, include_elevation = FALSE) {
   year_label <- year(track_data$timestamp[1])
   base_title <- paste(track_id, year_label, sep = "_")
   
@@ -460,8 +467,8 @@ create_track_row <- function(track_data, event_summary, track_id, working_thresh
   }
   
   # Create individual plots without titles - NEW ORDER: Location, Speed, NSD
-  location_plot <- create_location_plot_no_title(track_data, event_summary)
-  speed_plot <- create_speed_plot_no_title(track_data, event_summary, working_threshold, y_limit, y_scale_option, y_scale_multiplier)
+  location_plot <- create_location_plot_no_title(track_data, event_summary, include_elevation)
+  speed_plot <- create_speed_plot_no_title(track_data, event_summary, working_threshold, y_limit)
   nsd_plot <- create_nsd_plot_no_title(track_data, event_summary)
   
   # Create shared title as a text grob with status color
@@ -488,11 +495,10 @@ create_track_row <- function(track_data, event_summary, track_id, working_thresh
 #' @param track_ids vector of track identifiers
 #' @param working_thresholds vector of working thresholds
 #' @param y_limit y-axis limit
-#' @param y_scale_option optional y-axis scaling option
-#' @param y_scale_multiplier multiplier for threshold-based scaling
+#' @param include_elevation whether to include elevation background
 #' @return list of combined plot objects
 create_all_track_plots <- function(all_processed_data, all_event_summaries, 
-                                   track_ids, working_thresholds, y_limit, y_scale_option = NULL, y_scale_multiplier = NULL) {
+                                   track_ids, working_thresholds, y_limit, include_elevation = FALSE) {
   plot_rows <- list()
   
   for (i in seq_along(all_processed_data)) {
@@ -503,8 +509,7 @@ create_all_track_plots <- function(all_processed_data, all_event_summaries,
         track_ids[i], 
         working_thresholds[i], 
         y_limit,
-        y_scale_option,
-        y_scale_multiplier
+        include_elevation
       )
     }
   }
@@ -716,12 +721,11 @@ has_sufficient_data <- function(track_data, window) {
 #' @param window rolling window size in hours
 #' @param events_file path to known events file
 #' @param yaxis_limit y-axis limit for speed plots
-#' @param speed_plot_ylimit optional manual y-axis limit for speed plot (numeric value)
-#' @param speed_plot_ylimit_multiplier optional multiplier for threshold-based y-axis scaling (e.g., 2 for 2x threshold)
+#' @param include_elevation whether to include elevation background in location plots
 #' @return updated move2 object with parturition indicators
 rFunction <- function(data, threshold = NULL, window = 72,
                       events_file = NULL, yaxis_limit = 1000, 
-                      speed_plot_ylimit = NULL, speed_plot_ylimit_multiplier = NULL) {
+                      include_elevation = FALSE) {
   
   # Setup
   original_track_id_column <- mt_track_id_column(data)
@@ -822,17 +826,6 @@ rFunction <- function(data, threshold = NULL, window = 72,
       valid_track_ids <- track_ids[valid_indices]
       valid_thresholds <- all_working_thresholds[valid_indices]
       
-      # Determine y-axis scaling options for speed plot
-      y_scale_option <- NULL
-      y_scale_multiplier <- NULL
-      
-      if (!is.null(speed_plot_ylimit)) {
-        y_scale_option <- speed_plot_ylimit
-      } else if (!is.null(speed_plot_ylimit_multiplier)) {
-        y_scale_option <- "threshold_multiplier"
-        y_scale_multiplier <- speed_plot_ylimit_multiplier
-      }
-      
       # Create all plot rows with shared titles and status indicators
       plot_rows <- create_all_track_plots(
         valid_processed_data, 
@@ -840,8 +833,7 @@ rFunction <- function(data, threshold = NULL, window = 72,
         valid_track_ids, 
         valid_thresholds, 
         yaxis_limit,
-        y_scale_option,
-        y_scale_multiplier
+        include_elevation
       )
       
       # Render to PDF with legend page
