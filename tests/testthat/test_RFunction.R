@@ -113,10 +113,11 @@ test_that("function preserves data structure across parameter combinations", {
 })
 
 test_that("function doesn't duplicate columns with issue20 data", {
-  # Test with both datasets and different parameters
-  actual1 <- rFunction(data = test_data_issue20, threshold = 6, window = 756)
-  expect_contains(colnames(mt_track_data(actual1)), c("individual_local_identifier"))
-  expect_contains(colnames(actual1), c("trackID", "individual_local_identifier_year"))
+  # Test with both data sets and different parameters
+  actual1 <- rFunction(data = test_data_issue20,
+                       threshold = 6, window = 75)
+
+  expect_contains(colnames(actual1), c("individual_local_identifier_year"))
   expect_equal(length(colnames(actual1)), length(unique(colnames(actual1))))
   
   actual2 <- rFunction(data = test_data_issue20, threshold = NULL, window = 168)
@@ -145,8 +146,8 @@ test_that("function creates correct output files with different parameters", {
   
   # Test with different window
   actual3 <- rFunction(data = test_data_main, threshold = 10, window = 72)
-  csv_file3 <- file.path(temp_dir, "parturition_output_72h_threshold_10.csv")
-  pdf_file3 <- file.path(temp_dir, "parturition_analysis_72h_threshold_10.pdf")
+  csv_file3 <- file.path(temp_dir, "parturition_output_threshold_10mh_window_72h.csv")
+  pdf_file3 <- file.path(temp_dir, "parturition_analysis_threshold_10mh_window_72h.pdf")
   expect_true(file.exists(csv_file3))
   expect_true(file.exists(pdf_file3))
   

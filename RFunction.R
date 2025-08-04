@@ -157,7 +157,8 @@ identify_parturition_events <- function(track_data, working_threshold, window) {
   for (idx in event_indices) {
     start_idx <- idx - result$run_positive[idx - 1]
     end_idx <- idx
-    if (!is.na(start_idx) && start_idx > 0) {
+
+    if (!identical(start_idx, numeric(0)) && start_idx > 0 && !is.na(start_idx)) {
       result$parturition_event[start_idx:end_idx] <- 1
     }
   }
@@ -168,12 +169,11 @@ identify_parturition_events <- function(track_data, working_threshold, window) {
 #' Create summary data for detected parturition events
 #' @param track_data processed track data with events
 #' @param track_id track identifier
-#' @param animal_id animal identifier
 #' @param working_threshold speed threshold used
 #' @param window window size
 #' @param original_track_id_column name of track ID column
 #' @return data.frame with event summaries
-create_event_summary <- function(track_data, track_id, animal_id, working_threshold,
+create_event_summary <- function(track_data, track_id, working_threshold,
                                  window, original_track_id_column) {
   cutoff <- floor(window / median(track_data$timediff, na.rm = TRUE))
   event_indices <- which(track_data$run_change >= cutoff - 1)
@@ -195,7 +195,6 @@ create_event_summary <- function(track_data, track_id, animal_id, working_thresh
       
       event_data <- tibble(
         !!original_track_id_column := track_id,
-        individual_local_identifier = animal_id,
         number_max_reloc = ifelse(is.na(start_idx), NA, track_data$run_positive[idx - 1]),
         threshold_speed_meters_per_hour = working_threshold,
         start_date = ifelse(is.na(start_idx), NA, track_data$timestamp[start_idx]) |>
@@ -256,7 +255,6 @@ create_speed_plot_no_title <- function(track_data, event_summary, working_thresh
   
   # Color mapping:
   # colors[1] = "#000000" (Black) - main data
-  # colors[2] = "#E69F00" (Orange) - working threshold
   # colors[3] = "#56B4E9" (Sky blue) - event end
   # colors[4] = "#009E73" (Bluish green) - event start  
   # colors[6] = "#0072B2" (Blue) - known parturition
@@ -265,7 +263,6 @@ create_speed_plot_no_title <- function(track_data, event_summary, working_thresh
   p <- ggplot(track_data, aes(x = timestamp)) +
     geom_point(aes(y = speed), color = colors[1], size = 0.4, alpha = 0.7) +
     geom_line(aes(y = speed), color = colors[1], alpha = 0.5) +
-    geom_hline(yintercept = working_threshold, linetype = "dotted", color = colors[2]) +
     labs(x = "Time", y = expression(paste("Speed (Distance/", Delta, "t)"))) +
     ylim(0, y_limit) +
     scale_x_datetime(date_labels = "%m/%d/%y", date_breaks = "3 months") +
@@ -521,19 +518,19 @@ create_all_track_plots <- function(all_processed_data, all_event_summaries,
 
 #' Render improved plots to PDF
 #' @param plot_rows list of combined plot row objects
-#' @param output_path path for PDF output
 #' @param window window size for filename
 #' @param threshold threshold value for filename
 #' @param tracks_per_page number of track rows per page
-render_improved_plots_to_pdf <- function(plot_rows, output_path, window, threshold = NULL, tracks_per_page = 3) {
+render_improved_plots_to_pdf <- function(plot_rows, window, threshold = NULL, tracks_per_page = 3) {
   if (length(plot_rows) == 0) {
-    message("No plots to render")
+    logger.info("No plots to render")
     return(invisible(NULL))
   }
   
   # Create filename with threshold info
-  threshold_text <- if (is.null(threshold)) "average" else as.character(threshold)
-  pdf_path <- str_interp("${output_path}parturition_analysis_${window}h_threshold_${threshold_text}.pdf")
+  threshold_text <- ifelse(is.null(threshold), "average", threshold)
+  pdf_path <- appArtifactPath(str_interp("parturition_analysis_threshold_${threshold_text}mh_window_${window}h.pdf"))
+
   n_pages <- ceiling(length(plot_rows) / tracks_per_page)
   
   # Start PDF device
@@ -576,8 +573,6 @@ render_improved_plots_to_pdf <- function(plot_rows, output_path, window, thresho
                   gp = grid::gpar(fontsize = 10, col = colors[1]))
   grid::grid.text("Reddish purple line: Rolling mean speed", x = 0.05, y = 0.55, just = c("left", "top"), 
                   gp = grid::gpar(fontsize = 10, col = colors[8]))
-  grid::grid.text("Orange dotted line: Working threshold", x = 0.05, y = 0.52, just = c("left", "top"), 
-                  gp = grid::gpar(fontsize = 10, col = colors[2]))
   grid::grid.text("Grey shaded area: Detected parturition event", x = 0.05, y = 0.49, just = c("left", "top"), 
                   gp = grid::gpar(fontsize = 10, col = "grey50"))
   grid::grid.text("Bluish green dashed line: Event start", x = 0.05, y = 0.46, just = c("left", "top"), 
@@ -644,44 +639,11 @@ render_improved_plots_to_pdf <- function(plot_rows, output_path, window, thresho
   }
   
   dev.off()
-  message("Enhanced plots with legend saved to: ", pdf_path)
+  logger.info(paste("Enhanced plots with legend saved to:", pdf_path, sep = " "))
   return(invisible(pdf_path))
 }
 
 # Utility Functions -----------------------------------------------------------
-
-#' Get animal ID for a track
-#' @param data move2 object
-#' @param track_id track identifier
-#' @param original_track_id_column track ID column name
-#' @return animal ID
-get_animal_id <- function(data, track_id, original_track_id_column) {
-  tryCatch({
-    track_attributes <- mt_track_data(data)
-    
-    # Check if individual_local_identifier column exists
-    if ("individual_local_identifier" %in% names(track_attributes)) {
-      animal_id <- track_attributes |>
-        filter(!!sym(original_track_id_column) == track_id) |>
-        pull(individual_local_identifier) |>
-        first()
-      
-      # Return "unknown" if animal_id is NA or NULL
-      if (is.na(animal_id) || is.null(animal_id)) {
-        return("unknown")
-      } else {
-        return(animal_id)
-      }
-    } else {
-      # Column doesn't exist, return "unknown"
-      return("unknown")
-    }
-  }, error = function(e) {
-    # If any error occurs, return "unknown"
-    warning("Could not retrieve animal ID: ", e$message)
-    return("unknown")
-  })
-}
 
 #' Filter data for specific track
 #' @param data_df full dataset
@@ -729,8 +691,7 @@ rFunction <- function(data, threshold = NULL, window = 72,
   
   # Setup
   original_track_id_column <- mt_track_id_column(data)
-  app_artifacts_base_path <- Sys.getenv("APP_ARTIFACTS_DIR", "/tmp/")
-  
+
   # Prepare data
   data_df <- prepare_movement_data(data)
   track_ids <- unique(mt_track_id(data))
@@ -746,15 +707,14 @@ rFunction <- function(data, threshold = NULL, window = 72,
   # Process each track
   for (i in seq_along(track_ids)) {
     track_id <- track_ids[i]
-    animal_id <- get_animal_id(data, track_id, original_track_id_column)
-    
-    message("Processing track ", track_id, " (animal ", animal_id, ")")
+
+    logger.info(paste("Processing track", track_id, sep = ": "))
     
     track_data <- get_track_data(data_df, track_id, original_track_id_column)
     
     # Skip tracks with insufficient data
     if (!has_sufficient_data(track_data, window)) {
-      message("Skipping track ", track_id, " - insufficient data")
+      logger.info("Skipping track ", track_id, " - insufficient data")
       next
     }
     
@@ -775,7 +735,7 @@ rFunction <- function(data, threshold = NULL, window = 72,
       
       # Create event summary
       event_summary <- create_event_summary(
-        processed_data, track_id, animal_id, working_threshold, 
+        processed_data, track_id, working_threshold, 
         window, original_track_id_column
       )
     }
@@ -801,8 +761,8 @@ rFunction <- function(data, threshold = NULL, window = 72,
   # Generate outputs
   if (!is.null(final_event_summaries) && nrow(final_event_summaries) > 0) {
     # Save CSV with threshold in filename
-    threshold_text <- if (is.null(threshold)) "average" else as.character(threshold)
-    csv_path <- str_interp("${app_artifacts_base_path}parturition_output_${window}h_threshold_${threshold_text}.csv")
+    threshold_text <-   threshold_text <- ifelse(is.null(threshold), "average", threshold)
+    csv_path <- appArtifactPath(str_interp("parturition_output_threshold_${threshold_text}mh_window_${window}h.csv"))
     
     final_event_summaries |>
       filter(!is.na(start_date)) |>
@@ -812,7 +772,7 @@ rFunction <- function(data, threshold = NULL, window = 72,
       ) |>
       write_csv(csv_path)
     
-    message("Results saved to: ", csv_path)
+    logger.info(paste("Results saved to:", csv_path, sep = " "))
   }
   
   # Generate enhanced plots
@@ -838,7 +798,7 @@ rFunction <- function(data, threshold = NULL, window = 72,
       
       # Render to PDF with legend page
       if (length(plot_rows) > 0) {
-        render_improved_plots_to_pdf(plot_rows, app_artifacts_base_path, window, threshold)
+        render_improved_plots_to_pdf(plot_rows, window, threshold)
       }
     }
   }
