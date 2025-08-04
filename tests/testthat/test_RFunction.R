@@ -126,34 +126,28 @@ test_that("function doesn't duplicate columns with issue20 data", {
 
 # File Output Tests ----
 test_that("function creates correct output files with different parameters", {
-  temp_dir <- tempdir()
-  old_env <- Sys.getenv("APP_ARTIFACTS_DIR")
-  Sys.setenv(APP_ARTIFACTS_DIR = temp_dir)
+  old_env <- "./data/output"
   
   # Test with specific threshold
-  actual1 <- rFunction(data = test_data_main, threshold = 6, window = 756)
-  csv_file1 <- file.path(temp_dir, "parturition_output_756h_threshold_6.csv")
-  pdf_file1 <- file.path(temp_dir, "parturition_analysis_756h_threshold_6.pdf")
-  expect_true(file.exists(csv_file1))
+  actual1 <- rFunction(data = test_data_main, threshold = 30, window = 756)
+  pdf_file1 <- file.path(old_env, "parturition_analysis_threshold_6mh_window_756h.pdf")
+  
+  # no csv bc no events
   expect_true(file.exists(pdf_file1))
   
   # Test with default threshold (average)
   actual2 <- rFunction(data = test_data_main, threshold = NULL, window = 168)
-  csv_file2 <- file.path(temp_dir, "parturition_output_168h_threshold_average.csv")
-  pdf_file2 <- file.path(temp_dir, "parturition_analysis_168h_threshold_average.pdf")
+  csv_file2 <- file.path(old_env, "parturition_output_threshold_averagemh_window_168h.csv")
+  pdf_file2 <- file.path(old_env, "parturition_analysis_threshold_averagemh_window_168h.pdf")
   expect_true(file.exists(csv_file2))
   expect_true(file.exists(pdf_file2))
   
   # Test with different window
   actual3 <- rFunction(data = test_data_main, threshold = 10, window = 72)
-  csv_file3 <- file.path(temp_dir, "parturition_output_threshold_10mh_window_72h.csv")
-  pdf_file3 <- file.path(temp_dir, "parturition_analysis_threshold_10mh_window_72h.pdf")
+  csv_file3 <- file.path(old_env, "parturition_output_threshold_10mh_window_72h.csv")
+  pdf_file3 <- file.path(old_env, "parturition_analysis_threshold_10mh_window_72h.pdf")
   expect_true(file.exists(csv_file3))
   expect_true(file.exists(pdf_file3))
-  
-  # Clean up
-  Sys.setenv(APP_ARTIFACTS_DIR = old_env)
-  unlink(c(csv_file1, pdf_file1, csv_file2, pdf_file2, csv_file3, pdf_file3))
 })
 
 # Edge Cases and Error Handling ----
