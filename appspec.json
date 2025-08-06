@@ -1,52 +1,88 @@
 {
   "settings": [
-	{
+    {
       "id": "threshold",
-      "name": "Threshold speed",
-      "description": "Define the threshold speed (in m/h) within which a female restricts its movement while calving. By default, the average speed for each track is used.",
+      "name": "Movement speed threshold",
+      "description": "Define the speed threshold (in meters per hour) below which an animal is considered to be in parturition behavior. When set to null (default), the rolling average speed for each track will be automatically calculated and used as the threshold.",
       "defaultValue": null,
       "type": "DOUBLE"
     },
-	{
+    {
       "id": "window",
-      "name": "Time window used to calculate change in movement",
-      "description": "Provide the minimum time duration (in hours) that your animals need to be present at a cluster for including it in your results. Defaults to 72. This window must exceed the fix rate.",
+      "name": "Rolling window duration",
+      "description": "Specify the time window duration (in hours) for calculating rolling averages of movement metrics and identifying sustained low-movement periods. This value must be larger than your data's fix rate interval. Recommended: 72 hours for ungulates.",
       "defaultValue": 72,
       "type": "DOUBLE"
-    }
-  {
+    },
+    {
       "id": "events_file",
-      "name": "Known calving events",
-      "description": "Optionally, upload a local file with known calving events to include in outputs. See the app README for the expected format.",
-      "type": "USER_FILE"    
-  }
-    ],     
+      "name": "Known parturition events file",
+      "description": "Upload a CSV file containing known parturition dates for validation and comparison. The file should contain columns 'track_id' and 'birthdate' (YYYY-MM-DD format). See documentation for detailed format requirements.",
+      "defaultValue": null,
+      "type": "USER_FILE"
+    },
+    {
+      "id": "yaxis_limit",
+      "name": "Speed plot Y-axis limit",
+      "description": "Set the maximum value for the Y-axis in speed plots (in meters per hour). This helps standardize plot scales across different tracks for better visual comparison.",
+      "defaultValue": 1000,
+      "type": "DOUBLE"
+    },
+    {
+      "id": "include_elevation",
+      "name": "Include elevation background",
+      "description": "Add elevation terrain as background in location plots. This provides geographic context but may increase processing time and require internet connectivity for elevation data retrieval.",
+      "defaultValue": false,
+      "type": "CHECKBOX"
+    }
+  ],
   "dependencies": {
     "R": [
       {
-        "name": "tidyverse"
-      },
-	  {
         "name": "move2"
       },
       {
         "name": "zoo"
       },
-	  {
+      {
+        "name": "tidyverse"
+      },
+      {
         "name": "sf"
       },
-	    {
-	    "name": "magic"
-	    },
-	    {
-	    "name": "units"
-	    },
-	    {
-	    "name": "geosphere"
-	    },
-	    {
-	     "name": "lubridate"
-	    }
+      {
+        "name": "units"
+      },
+      {
+        "name": "magic"
+      },
+      {
+        "name": "geosphere"
+      },
+      {
+        "name": "lubridate"
+      },
+      {
+        "name": "ggplot2"
+      },
+      {
+        "name": "gridExtra"
+      },
+      {
+        "name": "grid"
+      },
+      {
+        "name": "elevatr"
+      },
+      {
+        "name": "terra"
+      },
+      {
+        "name": "viridisLite"
+      },
+      {
+        "name": "tidyterra"
+      }
     ]
   },
   "createsArtifacts": true,
@@ -56,9 +92,13 @@
   "language": "eng",
   "keywords": [
     "parturition",
-    "point cluster",
-    "cluster use",
-	"animal movement"
+    "calving",
+    "birthing behavior",
+    "movement analysis",
+    "cluster detection",
+    "animal behavior",
+    "wildlife ecology",
+    "ungulate reproduction"
   ],
   "people": [
     {
@@ -70,15 +110,27 @@
       "orcid": "0000-0002-7932-0191",
       "affiliation": "University of Minnesota",
       "affiliationRor": ""
+    },
+    {
+      "firstName": "Smith",
+      "middleInitials": null,
+      "lastName": "Freeman",
+      "email": "smithifreeman@gmail.com",
+      "roles": [
+        "author",
+        "creator"
+      ],
+      "orcid": "0009-0008-0430-653X",
+      "affiliation": "University of Minnesota",
+      "affiliationRor": "https://ror.org/03grvy078"
     }
-		
   ],
   "funding": [
     {
-	"name": "NASA Ecological Forecasting Program Grant 80NSSC21K1182"
-	}
+      "name": "NASA Ecological Forecasting Program Grant 80NSSC21K1182"
+    }
   ],
-  "documentation" : {
+  "documentation": {
     "url": "https://github.com/nilanjanchatterjee/parturition/blob/main/README.md"
   }
 }
