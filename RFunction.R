@@ -40,7 +40,8 @@ get_elevation_raster <- function(track_data) {
         x = track_data$location_long,
         y = track_data$location_lat
       ), z = 6, prj = st_crs(4326), src = "aws",
-      override_size_check = T, clip = "locations")
+      override_size_check = T, clip = "locations",
+      expand = 0.02)
     
     return(terra::rast(elevation))
   }, error = function(e) {
@@ -331,8 +332,8 @@ create_location_plot_no_title <- function(track_data, event_summary, include_ele
     if (!is.null(elev_raster)) {
       p <- p + 
         tidyterra::geom_spatraster(data = elev_raster, alpha = 0.6) +
-        scale_fill_viridis_c(name = "Elevation (m)",
-                             option = "terrain",
+        scale_fill_whitebox_c(name = "Elevation (m)",
+                             #option = "terrain",
                              na.value = "transparent")
     }
   }
